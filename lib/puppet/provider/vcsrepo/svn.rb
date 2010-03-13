@@ -56,12 +56,6 @@ Puppet::Type.type(:vcsrepo).provide(:svn) do
     svnadmin(*args)
   end
 
-  def reset(desired)
-    at_path do
-      git('reset', '--hard', desired)
-    end
-  end
-
   # Note: We don't rely on Dir.chdir's behavior of automatically returning the
   # value of the last statement -- for easier stubbing.
   def at_path(&block) #:nodoc:

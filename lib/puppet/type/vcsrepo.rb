@@ -13,12 +13,20 @@ Puppet::Type.newtype(:vcsrepo) do
     def retrieve
       prov = @resource.provider
       if prov
-        if prov.respond_to?(:working_copy_exists?) && prov.working_copy_exists?
-          :present
-        elsif prov.respond_to?(:bare_exists?) && prov.bare_exists?
-          :bare
+        if prov.respond_to?(:bare_exists?)
+          if prov.respond_to?(:working_copy_exists?) && prov.working_copy_exists?
+            :present
+          elsif prov.respond_to?(:bare_exists?) && prov.bare_exists?
+            :bare
+          else
+            :absent
+          end
         else
-          :absent
+          if prov.exists?
+            :present
+          else
+            :absent
+          end
         end
       else
         :absent
@@ -39,10 +47,7 @@ Puppet::Type.newtype(:vcsrepo) do
   end
 
   newparam(:source) do
-    desc "The source URL for the repository"
-    validate do |value|
-      URI.parse(value)
-    end
+    desc "The source URI for the repository"
   end
 
   newparam(:fstype) do
@@ -52,6 +57,15 @@ Puppet::Type.newtype(:vcsrepo) do
   newproperty(:revision) do
     desc "The revision of the repository"
     newvalue(/^\S+$/)
+  end
+
+  newparam :compression do
+    desc "Compression level (used by CVS)"
+    validate do |amount|
+      unless Integer(amount).between?(0, 6)
+        raise ArgumentError, "Unsupported compression level: #{amount} (expected 0-6)"
+      end
+    end
   end
 
 end
