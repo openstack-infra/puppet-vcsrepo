@@ -60,7 +60,9 @@ Puppet::Type.type(:vcsrepo).provide(:svn) do
     end
   end
 
-  def at_path(&block)
+  # Note: We don't rely on Dir.chdir's behavior of automatically returning the
+  # value of the last statement -- for easier stubbing.
+  def at_path(&block) #:nodoc:
     value = nil
     Dir.chdir(@resource.value(:path)) do
       value = yield

@@ -21,12 +21,8 @@ Puppet::Type.type(:vcsrepo).provide(:git) do
   end
   
   def revision
-    current = Dir.chdir(@resource.value(:path)) do
-      git('rev-parse', 'HEAD')
-    end
-    canonical = Dir.chdir(@resource.value(:path)) do
-      git('rev-parse', @resource.value(:revision))
-    end
+    current   = at_path { git('rev-parse', 'HEAD') }
+    canonical = at_path { git('rev-parse', @resource.value(:revision)) }
     if current == canonical
       @resource.value(:revision)
     else
@@ -64,8 +60,14 @@ Puppet::Type.type(:vcsrepo).provide(:git) do
     end
   end
 
-  def at_path(&block)
-    Dir.chdir(@resource.value(:path), &block)
+  # Note: We don't rely on Dir.chdir's behavior of automatically returning the
+  # value of the last statement -- for easier stubbing.
+  def at_path(&block) #:nodoc:
+    value = nil
+    Dir.chdir(@resource.value(:path)) do
+      value = yield
+    end
+    value
   end
 
 end
