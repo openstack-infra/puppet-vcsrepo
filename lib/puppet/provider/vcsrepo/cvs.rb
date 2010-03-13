@@ -1,4 +1,6 @@
-Puppet::Type.type(:vcsrepo).provide(:cvs) do
+require 'puppet/provider/vcsrepo'
+
+Puppet::Type.type(:vcsrepo).provide(:cvs, :parent => Puppet::Provider::Vcsrepo) do
   desc "Supports CVS repositories/workspaces"
 
   commands   :cvs => 'cvs'
@@ -72,16 +74,6 @@ Puppet::Type.type(:vcsrepo).provide(:cvs) do
 
   def create_repository(path)
     cvs('-d', path, 'init')
-  end
-
-  # Note: We don't rely on Dir.chdir's behavior of automatically returning the
-  # value of the last statement -- for easier stubbing.
-  def at_path(&block) #:nodoc:
-    value = nil
-    Dir.chdir(@resource.value(:path)) do
-      value = yield
-    end
-    value
   end
 
 end

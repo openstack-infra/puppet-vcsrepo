@@ -1,11 +1,13 @@
-Puppet::Type.type(:vcsrepo).provide(:svn) do
+require 'puppet/provider/vcsrepo'
+
+Puppet::Type.type(:vcsrepo).provide(:svn, :parent => Puppet::Provider::Vcsrepo) do
   desc "Supports Subversion repositories"
 
   commands :svn      => 'svn',
            :svnadmin => 'svnadmin'
 
   defaultfor :svn => :exists
-  
+
   def create
     if !@resource.value(:source)
       create_repository(@resource.value(:path))
@@ -54,16 +56,6 @@ Puppet::Type.type(:vcsrepo).provide(:svn) do
     end
     args << path
     svnadmin(*args)
-  end
-
-  # Note: We don't rely on Dir.chdir's behavior of automatically returning the
-  # value of the last statement -- for easier stubbing.
-  def at_path(&block) #:nodoc:
-    value = nil
-    Dir.chdir(@resource.value(:path)) do
-      value = yield
-    end
-    value
   end
 
 end
