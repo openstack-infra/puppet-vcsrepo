@@ -4,6 +4,8 @@ Puppet::Type.type(:vcsrepo).provide(:svn) do
   commands :svn      => 'svn',
            :svnadmin => 'svnadmin'
 
+  defaultfor :svn => :exists
+  
   def create
     if !@resource.value(:source)
       create_repository(@resource.value(:path))

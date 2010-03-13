@@ -11,27 +11,55 @@ describe provider_class do
   end
 
   describe 'when creating' do
-    context "when a source is given" do
-      context "and when a revision is given" do
-        it "should execute 'git clone' and 'git reset'" do
-          @resource.expects(:value).with(:path).returns(@path).at_least_once
-          @resource.expects(:value).with(:source).returns('git://example.com/repo.git').at_least_once
-          @provider.expects(:git).with('clone', 'git://example.com/repo.git', @path)
-          @resource.expects(:value).with(:revision).returns('abcdef').at_least_once
-          Dir.expects(:chdir).with(@path).yields
-          @provider.expects('git').with('reset', '--hard', 'abcdef')
-          @provider.create
-        end        
+    context "and when a source is given" do
+      before do
+        @resource.expects(:value).with(:source).returns('git://example.com/repo.git').at_least_once
       end
-      context "and when a revision is not given" do
-        it "should just execute 'git clone'" do
-          @resource.expects(:value).with(:path).returns(@path).at_least_once
-          @resource.expects(:value).with(:source).returns('git://example.com/repo.git').at_least_once
-          @resource.expects(:value).with(:revision).returns(nil).at_least_once
-          @provider.expects(:git).with('clone', 'git://example.com/repo.git', @path)
-          @provider.create
-        end        
+      context "and when ensure = present" do
+        before do
+          @resource.expects(:value).with(:ensure).returns(:present).at_least_once
+        end
+        context "and when a revision is given" do
+          it "should execute 'git clone' and 'git reset'" do
+            @resource.expects(:value).with(:path).returns(@path).at_least_once
+            @provider.expects(:git).with('clone', 'git://example.com/repo.git', @path)
+            @resource.expects(:value).with(:revision).returns('abcdef').at_least_once
+            Dir.expects(:chdir).with(@path).yields
+            @provider.expects('git').with('reset', '--hard', 'abcdef')
+            @provider.create
+          end        
+        end
+        context "and when a revision is not given" do
+          it "should just execute 'git clone'" do
+            @resource.expects(:value).with(:path).returns(@path).at_least_once
+            @resource.expects(:value).with(:revision).returns(nil).at_least_once
+            @provider.expects(:git).with('clone', 'git://example.com/repo.git', @path)
+            @provider.create
+          end        
+        end
       end
+      context "and when ensure = bare" do
+        before do
+          @resource.expects(:value).with(:ensure).returns(:bare).at_least_once
+        end
+        context "and when a revision is given" do
+          it "should just execute 'git clone --bare'" do
+            @resource.expects(:value).with(:path).returns(@path).at_least_once
+            @resource.expects(:value).with(:revision).returns(nil).at_least_once
+            @provider.expects(:git).with('clone', '--bare', 'git://example.com/repo.git', @path)
+            @provider.create
+          end        
+        end
+        context "and when a revision is not given" do
+          it "should just execute 'git clone --bare'" do
+            @resource.expects(:value).with(:path).returns(@path).at_least_once
+            @resource.expects(:value).with(:revision).returns(nil).at_least_once
+            @provider.expects(:git).with('clone', '--bare', 'git://example.com/repo.git', @path)
+            @provider.create
+          end        
+        end
+      end
+
     end
     context "when a source is not given" do
       before do
@@ -39,7 +67,7 @@ describe provider_class do
         @resource.expects(:value).with(:source).returns(nil)
       end
       context "when ensure = present" do
-        before { @resource.expects(:value).with(:ensure).returns('present').at_least_once }
+        before { @resource.expects(:value).with(:ensure).returns(:present).at_least_once }
         context "when the path does not exist" do
           it "should execute 'git init'" do
             Dir.expects(:mkdir).with(@path)
@@ -68,7 +96,7 @@ describe provider_class do
         end
       end
       context "when ensure = bare" do
-        before { @resource.expects(:value).with(:ensure).returns('bare').at_least_once } 
+        before { @resource.expects(:value).with(:ensure).returns(:bare).at_least_once } 
         context "when the path does not exist" do
           it "should execute 'git init --bare'" do
             Dir.expects(:chdir).with(@path).yields
@@ -104,58 +132,6 @@ describe provider_class do
       @resource.expects(:value).with(:path).returns(@path).at_least_once
       FileUtils.expects(:rm_rf).with(@path)
       @provider.destroy
-    end
-  end
-
-  describe "when checking existence" do
-    context "when ensure = present" do
-      context "when a working copy exists" do
-        it "should be true" do
-          @resource.expects(:value).with(:ensure).returns('present').at_least_once
-          @provider.expects(:working_copy_exists?).returns(true)
-          @provider.should be_exists
-        end
-      end
-      context "when a bare repo exists" do
-        it "should be " do
-          @resource.expects(:value).with(:ensure).returns('present').at_least_once
-          @provider.expects(:working_copy_exists?).returns(false)
-          @provider.should_not be_exists
-        end
-      end
-    end
-    context "when ensure = bare" do
-      context "when a working copy exists" do
-        it "should be false" do
-          @resource.expects(:value).with(:ensure).returns('bare').at_least_once
-          @provider.expects(:bare_exists?).returns(false)          
-          @provider.should_not be_exists
-        end
-      end
-      context "when a bare repo exists" do
-        it "should be true" do
-          @resource.expects(:value).with(:ensure).returns('bare').at_least_once
-          @provider.expects(:bare_exists?).returns(true)
-          @provider.should be_exists
-        end
-      end
-    end
-    context "when ensure = absent" do
-      before { @resource.expects(:value).with(:ensure).returns('absent') }
-      context "when the path exists" do
-        it "should be true" do
-          @resource.expects(:value).with(:path).returns(@path)
-          File.expects(:directory?).with(@path).returns(true)
-          @provider.should be_exists
-        end
-      end
-      context "when the path does not exist" do
-        it "should be false" do
-          @resource.expects(:value).with(:path).returns(@path)
-          File.expects(:directory?).with(@path).returns(false)
-          @provider.should_not be_exists
-        end
-      end
     end
   end
 

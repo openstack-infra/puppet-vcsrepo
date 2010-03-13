@@ -5,24 +5,20 @@ Puppet::Type.type(:vcsrepo).provide(:git) do
   desc "Supports Git repositories"
 
   commands :git => 'git'
+  defaultfor :git => :exists
 
   def create
     if !@resource.value(:source)
       init_repository(@resource.value(:path))
     else
       clone_repository(@resource.value(:source), @resource.value(:path))
-      reset(@resource.value(:revision)) if @resource.value(:revision)
-    end
-  end
-
-  def exists?
-    case @resource.value(:ensure)
-    when 'present'
-      working_copy_exists?
-    when 'bare'
-      bare_exists?
-    else
-      path_exists?
+      if @resource.value(:revision)
+        if @resource.value(:ensure) == :bare
+          notice "Ignoring revision for bare repository"
+        else
+          reset(@resource.value(:revision))
+        end
+      end
     end
   end
 
@@ -45,8 +41,6 @@ Puppet::Type.type(:vcsrepo).provide(:git) do
     reset(desired)
   end
 
-  private
-
   def bare_exists?
     bare_git_config_exists? && !working_copy_exists?
   end
@@ -54,7 +48,13 @@ Puppet::Type.type(:vcsrepo).provide(:git) do
   def working_copy_exists?
     File.directory?(File.join(@resource.value(:path), '.git'))
   end
+
+  def exists?
+    bare_exists? || working_copy_exists?
+  end
   
+  private
+
   def path_exists?
     File.directory?(@resource.value(:path))
   end
@@ -64,7 +64,12 @@ Puppet::Type.type(:vcsrepo).provide(:git) do
   end
   
   def clone_repository(source, path)
-    git('clone', source, path)
+    args = ['clone']
+    if @resource.value(:ensure) == :bare
+      args << '--bare'
+    end
+    args.push(source, path)
+    git(*args)
   end
 
   def fetch
@@ -74,9 +79,9 @@ Puppet::Type.type(:vcsrepo).provide(:git) do
   end
 
   def init_repository(path)
-    if @resource.value(:ensure) == 'bare' && working_copy_exists?
+    if @resource.value(:ensure) == :bare && working_copy_exists?
       convert_working_copy_to_bare
-    elsif @resource.value(:ensure) == 'present' && bare_exists?
+    elsif @resource.value(:ensure) == :present && bare_exists?
       convert_bare_to_working_copy
     elsif File.directory?(@resource.value(:path))
       raise Puppet::Error, "Could not create repository (non-repository at path)"
@@ -114,8 +119,11 @@ Puppet::Type.type(:vcsrepo).provide(:git) do
   def normal_init
     FileUtils.mkdir(@resource.value(:path))
     args = ['init']
-    if @resource.value(:ensure) == 'bare'
+    if @resource.value(:ensure) == :bare
+      notice "Creating a bare repository"
       args << '--bare'
+    else
+      notice "Creating a working copy repository (#{@resource.value(:ensure).inspect})"
     end
     at_path do
       git(*args)

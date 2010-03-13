@@ -9,6 +9,22 @@ Puppet::Type.newtype(:vcsrepo) do
     newvalue :bare do
       provider.create
     end
+
+    def retrieve
+      prov = @resource.provider
+      if prov
+        if prov.respond_to?(:working_copy_exists?) && prov.working_copy_exists?
+          :present
+        elsif prov.respond_to?(:bare_exists?) && prov.bare_exists?
+          :bare
+        else
+          :absent
+        end
+      else
+        :absent
+      end
+    end
+
   end
 
   newparam(:path) do
