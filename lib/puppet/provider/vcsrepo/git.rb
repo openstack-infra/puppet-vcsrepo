@@ -42,8 +42,6 @@ Puppet::Type.type(:vcsrepo).provide(:git) do
   private
 
   def clone_repository(source, path)
-    parent = File.dirname(path)
-    FileUtils.mkdir_p(parent)
     git('clone', source, path)
   end
 

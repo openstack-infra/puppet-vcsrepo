@@ -23,6 +23,10 @@ Puppet::Type.newtype(:vcsrepo) do
     end
   end
 
+  newparam(:fstype) do
+    desc "Filesystem type (for providers that support it, eg subversion)"
+  end
+
   newproperty(:revision) do
     desc "The revision of the repository"
     newvalue(/^\S+$/)
