@@ -34,12 +34,67 @@ describe provider_class do
       end
     end
     context "when a source is not given" do
-      it "should execute 'git init'" do
+      before do
         @resource.expects(:value).with(:path).returns(@path).at_least_once
         @resource.expects(:value).with(:source).returns(nil)
-        Dir.expects(:chdir).with(@path).yields
-        @provider.expects(:git).with('init')
-        @provider.create
+      end
+      context "when ensure = present" do
+        before { @resource.expects(:value).with(:ensure).returns('present').at_least_once }
+        context "when the path does not exist" do
+          it "should execute 'git init'" do
+            Dir.expects(:mkdir).with(@path)
+            Dir.expects(:chdir).with(@path).yields
+            @provider.expects(:bare_exists?).returns(false)
+            File.expects(:directory?).with(@path).returns(false)
+            @provider.expects(:git).with('init')
+            @provider.create
+          end
+        end
+        context "when the path is a bare repository" do
+          it "should convert it to a working copy" do
+            @provider.expects(:bare_exists?).returns(true)
+            @provider.expects(:convert_bare_to_working_copy)
+            @provider.create
+          end
+        end
+        context "when the path is not a repository" do
+          it "should raise an exception" do
+            File.expects(:directory?).with(@path).returns(true)
+            @provider.expects(:bare_exists?).returns(false)
+            proc {
+              @provider.create
+            }.should raise_error(Puppet::Error)
+          end
+        end
+      end
+      context "when ensure = bare" do
+        before { @resource.expects(:value).with(:ensure).returns('bare').at_least_once } 
+        context "when the path does not exist" do
+          it "should execute 'git init --bare'" do
+            Dir.expects(:chdir).with(@path).yields
+            File.expects(:directory?).with(@path).returns(false)
+            FileUtils.expects(:mkdir).with(@path)
+            @provider.expects(:working_copy_exists?).returns(false)
+            @provider.expects(:git).with('init', '--bare')
+            @provider.create
+          end
+        end
+        context "when the path is a working copy repository" do
+          it "should convert it to a bare repository" do
+            @provider.expects(:working_copy_exists?).returns(true)
+            @provider.expects(:convert_working_copy_to_bare)
+            @provider.create
+          end
+        end
+        context "when the path is not a repository" do
+          it "should raise an exception" do
+            File.expects(:directory?).with(@path).returns(true)
+            @provider.expects(:working_copy_exists?).returns(false)
+            proc {
+              @provider.create
+            }.should raise_error(Puppet::Error)
+          end
+        end
       end
     end
   end
@@ -53,10 +108,54 @@ describe provider_class do
   end
 
   describe "when checking existence" do
-    it "should check for the directory" do
-      @resource.expects(:value).with(:path).returns(@path)
-      File.expects(:directory?).with(@path)
-      @provider.exists?
+    context "when ensure = present" do
+      context "when a working copy exists" do
+        it "should be true" do
+          @resource.expects(:value).with(:ensure).returns('present').at_least_once
+          @provider.expects(:working_copy_exists?).returns(true)
+          @provider.should be_exists
+        end
+      end
+      context "when a bare repo exists" do
+        it "should be " do
+          @resource.expects(:value).with(:ensure).returns('present').at_least_once
+          @provider.expects(:working_copy_exists?).returns(false)
+          @provider.should_not be_exists
+        end
+      end
+    end
+    context "when ensure = bare" do
+      context "when a working copy exists" do
+        it "should be false" do
+          @resource.expects(:value).with(:ensure).returns('bare').at_least_once
+          @provider.expects(:bare_exists?).returns(false)          
+          @provider.should_not be_exists
+        end
+      end
+      context "when a bare repo exists" do
+        it "should be true" do
+          @resource.expects(:value).with(:ensure).returns('bare').at_least_once
+          @provider.expects(:bare_exists?).returns(true)
+          @provider.should be_exists
+        end
+      end
+    end
+    context "when ensure = absent" do
+      before { @resource.expects(:value).with(:ensure).returns('absent') }
+      context "when the path exists" do
+        it "should be true" do
+          @resource.expects(:value).with(:path).returns(@path)
+          File.expects(:directory?).with(@path).returns(true)
+          @provider.should be_exists
+        end
+      end
+      context "when the path does not exist" do
+        it "should be false" do
+          @resource.expects(:value).with(:path).returns(@path)
+          File.expects(:directory?).with(@path).returns(false)
+          @provider.should_not be_exists
+        end
+      end
     end
   end
 
@@ -106,7 +205,7 @@ describe provider_class do
       end
     end
   end
-  
+
   describe "when setting the revision property" do
     it "should use 'git fetch' and 'git reset'" do
       @resource.expects(:value).with(:path).returns(@path).at_least_once

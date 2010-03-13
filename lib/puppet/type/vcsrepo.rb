@@ -3,7 +3,13 @@ require 'pathname'
 Puppet::Type.newtype(:vcsrepo) do
   desc "A local version control repository"
 
-  ensurable
+  ensurable do
+    defaultvalues
+
+    newvalue :bare do
+      provider.create
+    end
+  end
 
   newparam(:path) do
     desc "Absolute path to repository"

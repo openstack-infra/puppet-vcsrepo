@@ -10,7 +10,7 @@ describe provider_class do
     @path = '/tmp/vcsrepo'
   end
 
-  context 'when creating' do
+  describe 'when creating' do
     context "when a source is given" do
       context "and when a revision is given" do
         it "should execute 'svn checkout' with a revision" do
@@ -53,7 +53,7 @@ describe provider_class do
     end
   end
 
-  context 'when destroying' do
+  describe 'when destroying' do
     it "it should remove the directory" do
       @resource.expects(:value).with(:path).returns(@path).at_least_once
       FileUtils.expects(:rm_rf).with(@path)
@@ -61,7 +61,7 @@ describe provider_class do
     end
   end
 
-  context "when checking existence" do
+  describe "when checking existence" do
     it "should check for the directory" do
       @resource.expects(:value).with(:path).returns(@path)
       File.expects(:directory?).with(@path)
@@ -69,23 +69,21 @@ describe provider_class do
     end
   end
 
-  describe "revision property" do
-    context "when checking" do
-      it "should use 'svn info'" do
-        @resource.expects(:value).with(:path).returns(@path)
-        p fixture(:svn_info)[/^Revision:\s+(\d+)/m, 1]
-        @provider.expects('svn').with('info').returns(fixture(:svn_info))
-        Dir.expects(:chdir).with(@path).yields
-        @provider.revision.should == '4'
-      end
+  describe "when checking the revision property" do
+    it "should use 'svn info'" do
+      @resource.expects(:value).with(:path).returns(@path)
+      @provider.expects('svn').with('info').returns(fixture(:svn_info))
+      Dir.expects(:chdir).with(@path).yields
+      @provider.revision.should == '4'
     end
-    context "when setting" do
-      it "should use 'svn update'" do
-        @resource.expects(:value).with(:path).returns(@path)
-        @provider.expects('svn').with('update', '-r', '30')
-        Dir.expects(:chdir).with(@path).yields
-        @provider.revision = '30'
-      end
+  end
+  
+  describe "when setting the revision property" do
+    it "should use 'svn update'" do
+      @resource.expects(:value).with(:path).returns(@path)
+      @provider.expects('svn').with('update', '-r', '30')
+      Dir.expects(:chdir).with(@path).yields
+      @provider.revision = '30'
     end
   end
 

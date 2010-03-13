@@ -1,3 +1,6 @@
+require 'tmpdir'
+require 'digest/md5'
+
 Puppet::Type.type(:vcsrepo).provide(:git) do
   desc "Supports Git repositories"
 
@@ -13,7 +16,14 @@ Puppet::Type.type(:vcsrepo).provide(:git) do
   end
 
   def exists?
-    File.directory?(@resource.value(:path))
+    case @resource.value(:ensure)
+    when 'present'
+      working_copy_exists?
+    when 'bare'
+      bare_exists?
+    else
+      path_exists?
+    end
   end
 
   def destroy
@@ -37,6 +47,22 @@ Puppet::Type.type(:vcsrepo).provide(:git) do
 
   private
 
+  def bare_exists?
+    bare_git_config_exists? && !working_copy_exists?
+  end
+
+  def working_copy_exists?
+    File.directory?(File.join(@resource.value(:path), '.git'))
+  end
+  
+  def path_exists?
+    File.directory?(@resource.value(:path))
+  end
+
+  def bare_git_config_exists?
+    File.exist?(File.join(@resource.value(:path), 'config'))
+  end
+  
   def clone_repository(source, path)
     git('clone', source, path)
   end
@@ -48,9 +74,51 @@ Puppet::Type.type(:vcsrepo).provide(:git) do
   end
 
   def init_repository(path)
-    FileUtils.mkdir_p(path)
+    if @resource.value(:ensure) == 'bare' && working_copy_exists?
+      convert_working_copy_to_bare
+    elsif @resource.value(:ensure) == 'present' && bare_exists?
+      convert_bare_to_working_copy
+    elsif File.directory?(@resource.value(:path))
+      raise Puppet::Error, "Could not create repository (non-repository at path)"
+    else
+      normal_init
+    end
+  end
+
+  # Convert working copy to bare
+  #
+  # Moves:
+  #   <path>/.git
+  # to:
+  #   <path>/
+  def convert_working_copy_to_bare
+    FileUtils.mv(File.join(@resource.value(:path), '.git'), tempdir)
+    FileUtils.rm_rf(@resource.value(:path))
+    FileUtils.cp_r(tempdir, @resource.value(:path))
+  end
+
+  # Convert bare to working copy
+  #
+  # Moves:
+  #   <path>/
+  # to:
+  #   <path>/.git
+  def convert_bare_to_working_copy
+    FileUtils.mv(@resource.value(:path), tempdir)
+    FileUtils.mkdir(@resource.value(:path))
+    FileUtils.cp_r(tempdir, File.join(@resource.value(:path), '.git'))
+    reset('HEAD')
+    git('checkout', '-f')
+  end
+
+  def normal_init
+    FileUtils.mkdir(@resource.value(:path))
+    args = ['init']
+    if @resource.value(:ensure) == 'bare'
+      args << '--bare'
+    end
     at_path do
-      git('init')
+      git(*args)
     end
   end
 
@@ -68,6 +136,10 @@ Puppet::Type.type(:vcsrepo).provide(:git) do
       value = yield
     end
     value
+  end
+
+  def tempdir
+    @tempdir ||= File.join(Dir.tmpdir, 'vcsrepo-' + Digest::MD5.hexdigest(@resource.value(:path)))
   end
 
 end
