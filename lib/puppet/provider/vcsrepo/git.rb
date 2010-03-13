@@ -97,9 +97,10 @@ Puppet::Type.type(:vcsrepo).provide(:git) do
   # to:
   #   <path>/
   def convert_working_copy_to_bare
+    notice "Converting working copy repository to bare repository"
     FileUtils.mv(File.join(@resource.value(:path), '.git'), tempdir)
     FileUtils.rm_rf(@resource.value(:path))
-    FileUtils.cp_r(tempdir, @resource.value(:path))
+    FileUtils.mv(tempdir, @resource.value(:path))
   end
 
   # Convert bare to working copy
@@ -109,25 +110,32 @@ Puppet::Type.type(:vcsrepo).provide(:git) do
   # to:
   #   <path>/.git
   def convert_bare_to_working_copy
+    notice "Converting bare repository to working copy repository"
     FileUtils.mv(@resource.value(:path), tempdir)
     FileUtils.mkdir(@resource.value(:path))
-    FileUtils.cp_r(tempdir, File.join(@resource.value(:path), '.git'))
-    reset('HEAD')
-    git('checkout', '-f')
+    FileUtils.mv(tempdir, File.join(@resource.value(:path), '.git'))
+    if commits_in?(File.join(@resource.value(:path), '.git'))
+      reset('HEAD')
+      git('checkout', '-f')
+    end
   end
 
   def normal_init
     FileUtils.mkdir(@resource.value(:path))
     args = ['init']
     if @resource.value(:ensure) == :bare
-      notice "Creating a bare repository"
       args << '--bare'
-    else
-      notice "Creating a working copy repository (#{@resource.value(:ensure).inspect})"
     end
     at_path do
       git(*args)
     end
+  end
+
+  def commits_in?(dot_git)
+    Dir.glob(File.join(dot_git, 'objects/info/*'), File::FNM_DOTMATCH) do |e|
+      return true unless %w(. ..).include?(File::basename(e))
+    end
+    false
   end
 
   def reset(desired)
