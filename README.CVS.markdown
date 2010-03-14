@@ -40,3 +40,17 @@ For a specific tag, use `revision`:
         source => ":pserver:anonymous@example.com:/sources/myproj",
         revision => "SOMETAG"
     }
+
+For sources that use SSH
+------------------------
+
+Manage your SSH keys with Puppet and use `require` in your `vcsrepo`
+to ensure they are present.  For more information, see the `require`
+metaparameter documentation[1].
+
+More Examples
+-------------
+
+For examples you can run, see `examples/cvs/`
+
+[1]: http://docs.reductivelabs.com/references/stable/metaparameter.html#require

@@ -47,3 +47,17 @@ For a specific revision (can be a commit SHA or tag):
         revision => '1.1.2rc1'
     }
 
+For sources that use SSH (eg, `username@server:...`)
+----------------------------------------------------
+
+Manage your SSH keys with Puppet and use `require` in your `vcsrepo`
+to ensure they are present.  For more information, see the `require`
+metaparameter documentation[1].
+
+More Examples
+-------------
+
+For examples you can run, see `examples/git/`
+
+[1]: http://docs.reductivelabs.com/references/stable/metaparameter.html#require
+

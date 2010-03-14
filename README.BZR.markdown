@@ -32,7 +32,16 @@ For a specific revision, use `revision` with a valid revisionspec
         revision => 'menesis@pov.lt-20100309191856-4wmfqzc803fj300x'
     }
 
+For sources that use SSH (eg, `bzr+ssh://...`, `sftp://...`)
+------------------------------------------------------------
+
+Manage your SSH keys with Puppet and use `require` in your `vcsrepo`
+to ensure they are present.  For more information, see the `require`
+metaparameter documentation[1].
+
 More Examples
 -------------
 
 For examples you can run, see `examples/bzr/`
+
+[1]: http://docs.reductivelabs.com/references/stable/metaparameter.html#require

@@ -39,3 +39,17 @@ You can also set `revision` to a tag:
         source   => "http://hg.example.com/myrepo"
         revision => '1.1.2'
     }
+
+For sources that use SSH (eg, `ssh://...`)
+------------------------------------------
+
+Manage your SSH keys with Puppet and use `require` in your `vcsrepo`
+to ensure they are present.  For more information, see the `require`
+metaparameter documentation[1].
+
+More Examples
+-------------
+
+For examples you can run, see `examples/hg/`
+
+[1]: http://docs.reductivelabs.com/references/stable/metaparameter.html#require
