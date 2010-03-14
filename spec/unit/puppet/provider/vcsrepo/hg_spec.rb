@@ -70,12 +70,54 @@ describe provider_class do
 
   describe "when checking the revision property" do
     before do
-      @resource.expects(:value).with(:path).returns(@path)
-    end
-    it "should use 'hg tip'" do
-      @provider.expects('hg').with('parents').returns(fixture(:hg_parents))
+      @resource.expects(:value).with(:path).returns(@path).at_least_once
       Dir.expects(:chdir).with(@path).yields
-      @provider.revision.should == '34e6012c783a'
+    end
+    context "when given a non-SHA as the resource revision" do
+      before do
+        @provider.expects(:hg).with('parents').returns(fixture(:hg_parents))
+      end
+      context "when its SHA is not different than the current SHA" do
+        before do
+          @resource.expects(:value).with(:revision).returns('0.6').at_least_once
+        end
+        it "should return the ref" do
+          @provider.expects(:hg).with('tags').returns(fixture(:hg_tags))
+          @provider.revision.should == '0.6'
+        end
+      end
+      context "when its SHA is different than the current SHA" do
+        before do
+          @resource.expects(:value).with(:revision).returns('0.5.3').at_least_once
+        end
+        it "should return the current SHA" do
+          @provider.expects(:hg).with('tags').returns(fixture(:hg_tags))
+          @provider.revision.should == '34e6012c783a'
+        end          
+      end
+    end
+    context "when given a SHA as the resource revision" do
+      before do
+        @provider.expects(:hg).with('parents').returns(fixture(:hg_parents))
+      end
+      context "when it is the same as the current SHA" do
+        before do
+          @resource.expects(:value).with(:revision).returns('34e6012c783a').at_least_once
+        end
+        it "should return it" do
+          @provider.expects(:hg).with('tags').never
+          @provider.revision.should == '34e6012c783a'
+        end
+      end
+      context "when it is not the same as the current SHA" do
+        before do
+          @resource.expects(:value).with(:revision).returns('34e6012c7').at_least_once
+        end
+        it "should return the current SHA" do
+          @provider.expects(:hg).with('tags').returns(fixture(:hg_tags))          
+          @provider.revision.should == '34e6012c783a'
+        end
+      end
     end
   end
   
