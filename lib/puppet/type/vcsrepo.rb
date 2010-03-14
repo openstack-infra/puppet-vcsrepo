@@ -13,10 +13,17 @@ Puppet::Type.newtype(:vcsrepo) do
 
 
   ensurable do
-    defaultvalues
+
+    newvalue :present do
+      provider.create
+    end
 
     newvalue :bare, :required_features => [:bare_repositories] do
       provider.create
+    end
+
+    newvalue :absent do
+      provider.destroy
     end
 
     def retrieve
