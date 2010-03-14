@@ -5,6 +5,7 @@ Puppet::Type.type(:vcsrepo).provide(:cvs, :parent => Puppet::Provider::Vcsrepo) 
 
   commands   :cvs => 'cvs'
   defaultfor :cvs => :exists
+  has_features :gzip_compression
   
   def create
     if !@resource.value(:source)

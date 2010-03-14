@@ -3,33 +3,38 @@ require 'pathname'
 Puppet::Type.newtype(:vcsrepo) do
   desc "A local version control repository"
 
+  feature :gzip_compression,
+          "The provider supports explicit GZip compression levels"
+
+  feature :bare_repositories,
+          "The provider differentiates between bare repositories
+          and those with working copies",
+          :methods => [:bare_exists?, :working_copy_exists?]
+
+
   ensurable do
     defaultvalues
 
-    newvalue :bare do
+    newvalue :bare, :required_features => [:bare_repositories] do
       provider.create
     end
 
     def retrieve
       prov = @resource.provider
       if prov
-        if prov.respond_to?(:bare_exists?)
-          if prov.respond_to?(:working_copy_exists?) && prov.working_copy_exists?
+        if prov.class.feature?(:bare_repositories)
+          if prov.working_copy_exists?
             :present
-          elsif prov.respond_to?(:bare_exists?) && prov.bare_exists?
+          elsif prov.bare_exists?
             :bare
           else
             :absent
           end
         else
-          if prov.exists?
-            :present
-          else
-            :absent
-          end
+          prov.exists? ? :present : :absent
         end
       else
-        :absent
+        raise Puppet::Error, "Could not find provider"
       end
     end
 
@@ -59,7 +64,7 @@ Puppet::Type.newtype(:vcsrepo) do
     newvalue(/^\S+$/)
   end
 
-  newparam :compression do
+  newparam :compression, :required_features => [:gzip_compression] do
     desc "Compression level (used by CVS)"
     validate do |amount|
       unless Integer(amount).between?(0, 6)

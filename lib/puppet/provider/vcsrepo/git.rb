@@ -5,6 +5,7 @@ Puppet::Type.type(:vcsrepo).provide(:git, :parent => Puppet::Provider::Vcsrepo) 
 
   commands :git => 'git'
   defaultfor :git => :exists
+  has_features :bare_repositories
 
   def create
     if !@resource.value(:source)
@@ -46,10 +47,6 @@ Puppet::Type.type(:vcsrepo).provide(:git, :parent => Puppet::Provider::Vcsrepo) 
 
   def working_copy_exists?
     File.directory?(File.join(@resource.value(:path), '.git'))
-  end
-
-  def exists?
-    bare_exists? || working_copy_exists?
   end
   
   private
