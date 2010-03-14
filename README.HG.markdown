@@ -12,7 +12,7 @@ Define a `vcsrepo` without a `source` or `revision`:
     }
 
 To clone/pull & update a repository
-----------------------------
+-----------------------------------
 
 To get the default branch tip:
 

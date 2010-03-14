@@ -12,7 +12,7 @@ Define a `vcsrepo` without a `source` or `revision`:
     }
 
 To branch from an existing repository
--------------------------------------:
+-------------------------------------
 
 Provide the `source` location:
 
