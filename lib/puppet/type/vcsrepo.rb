@@ -11,6 +11,8 @@ Puppet::Type.newtype(:vcsrepo) do
           and those with working copies",
           :methods => [:bare_exists?, :working_copy_exists?]
 
+  feature :filesystem_types,
+          "The provider supports different filesystem types"
 
   ensurable do
 
@@ -62,8 +64,8 @@ Puppet::Type.newtype(:vcsrepo) do
     desc "The source URI for the repository"
   end
 
-  newparam(:fstype) do
-    desc "Filesystem type (for providers that support it, eg subversion)"
+  newparam(:fstype, :required_features => [:filesystem_types]) do
+    desc "Filesystem type"
   end
 
   newproperty(:revision) do
@@ -72,7 +74,7 @@ Puppet::Type.newtype(:vcsrepo) do
   end
 
   newparam :compression, :required_features => [:gzip_compression] do
-    desc "Compression level (used by CVS)"
+    desc "Compression level"
     validate do |amount|
       unless Integer(amount).between?(0, 6)
         raise ArgumentError, "Unsupported compression level: #{amount} (expected 0-6)"

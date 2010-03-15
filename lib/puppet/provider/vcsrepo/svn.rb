@@ -7,6 +7,7 @@ Puppet::Type.type(:vcsrepo).provide(:svn, :parent => Puppet::Provider::Vcsrepo) 
            :svnadmin => 'svnadmin'
 
   defaultfor :svn => :exists
+  has_features :filesystem_types
 
   def create
     if !@resource.value(:source)
