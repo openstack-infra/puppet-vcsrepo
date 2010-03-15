@@ -5,6 +5,7 @@ Puppet::Type.type(:vcsrepo).provide(:hg, :parent => Puppet::Provider::Vcsrepo) d
 
   commands   :hg => 'hg'
   defaultfor :hg => :exists
+  has_features :reference_tracking
 
   def create
     if !@resource.value(:source)

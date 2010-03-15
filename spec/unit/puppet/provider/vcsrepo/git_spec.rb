@@ -185,11 +185,20 @@ describe provider_class do
   describe "when setting the revision property" do
     it "should use 'git fetch' and 'git reset'" do
       @resource.expects(:value).with(:path).returns(@path).at_least_once
-      @provider.expects('git').with('fetch', 'origin')
+      @provider.expects('git').with('pull', 'origin')
       Dir.expects(:chdir).with(@path).at_least_once.yields
       @provider.expects('git').with('reset', '--hard', 'carcar')
       @provider.revision = 'carcar'
     end
+  end
+
+  describe "when updating references" do
+    it "should use 'git fetch --tags'" do
+      @resource.expects(:value).with(:path).returns(@path).at_least_once
+      @provider.expects('git').with('fetch', '--tags', 'origin')
+      Dir.expects(:chdir).with(@path).at_least_once.yields
+      @provider.update_references
+    end    
   end
 
 end

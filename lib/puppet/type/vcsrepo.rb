@@ -14,6 +14,10 @@ Puppet::Type.newtype(:vcsrepo) do
   feature :filesystem_types,
           "The provider supports different filesystem types"
 
+  feature :reference_tracking,
+          "The provider supports tracking revision references that can change
+           over time (eg, some VCS tags and branch names)"
+  
   ensurable do
 
     newvalue :present do
@@ -26,6 +30,19 @@ Puppet::Type.newtype(:vcsrepo) do
 
     newvalue :absent do
       provider.destroy
+    end
+
+    newvalue :latest, :required_features => [:reference_tracking] do
+      if provider.exists?
+        if provider.respond_to?(:update_references)
+          provider.update_references
+        end
+        reference = resource.value(:revision) || provider.revision
+        notice "Updating to latest '#{reference}' revision"
+        provider.revision = reference
+      else
+        provider.create
+      end
     end
 
     def retrieve

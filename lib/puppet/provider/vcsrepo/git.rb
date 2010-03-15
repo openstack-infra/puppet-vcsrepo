@@ -5,7 +5,7 @@ Puppet::Type.type(:vcsrepo).provide(:git, :parent => Puppet::Provider::Vcsrepo) 
 
   commands :git => 'git'
   defaultfor :git => :exists
-  has_features :bare_repositories
+  has_features :bare_repositories, :reference_tracking
 
   def create
     if !@resource.value(:source)
@@ -37,7 +37,7 @@ Puppet::Type.type(:vcsrepo).provide(:git, :parent => Puppet::Provider::Vcsrepo) 
   end
 
   def revision=(desired)
-    fetch
+    pull
     reset(desired)
   end
 
@@ -47,6 +47,16 @@ Puppet::Type.type(:vcsrepo).provide(:git, :parent => Puppet::Provider::Vcsrepo) 
 
   def working_copy_exists?
     File.directory?(File.join(@resource.value(:path), '.git'))
+  end
+
+  def exists?
+    working_copy_exists? || bare_exists?
+  end
+
+  def update_references
+    at_path do
+      git('fetch', '--tags', 'origin')
+    end
   end
   
   private
@@ -68,9 +78,9 @@ Puppet::Type.type(:vcsrepo).provide(:git, :parent => Puppet::Provider::Vcsrepo) 
     git(*args)
   end
 
-  def fetch
+  def pull
     at_path do
-      git('fetch', 'origin')
+      git('pull', 'origin')
     end
   end
 
