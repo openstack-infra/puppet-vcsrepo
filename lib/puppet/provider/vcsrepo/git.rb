@@ -19,6 +19,9 @@ Puppet::Type.type(:vcsrepo).provide(:git, :parent => Puppet::Provider::Vcsrepo) 
           reset(@resource.value(:revision))
         end
       end
+      if @resource.value(:ensure) != :bare
+        update_submodules
+      end
     end
   end
 
@@ -39,6 +42,9 @@ Puppet::Type.type(:vcsrepo).provide(:git, :parent => Puppet::Provider::Vcsrepo) 
   def revision=(desired)
     fetch
     reset(desired)
+    unless @resource.value(:ensure) == :bare
+      update_submodules
+    end
   end
 
   def bare_exists?
@@ -147,6 +153,13 @@ Puppet::Type.type(:vcsrepo).provide(:git, :parent => Puppet::Provider::Vcsrepo) 
   def reset(desired)
     at_path do
       git('reset', '--hard', desired)
+    end
+  end
+
+  def update_submodules
+    at_path do
+      git('submodule', 'init')
+      git('submodule', 'update')
     end
   end
 

@@ -10,13 +10,18 @@ describe_provider :vcsrepo, :git, :resource => {:path => '/tmp/vcsrepo'} do
             provider.expects('git').with('clone', resource.value(:source), resource.value(:path))
             expects_chdir
             provider.expects('git').with('reset', '--hard', resource.value(:revision))
+            provider.expects(:git).with('submodule', 'init')
+            provider.expects(:git).with('submodule', 'update')
             provider.create
           end
         end
         
         resource_without :revision do
-          it "should just execute 'git clone'" do
+          it "should execute 'git clone' and submodule commands" do
             provider.expects(:git).with('clone', resource.value(:source), resource.value(:path))
+            expects_chdir
+            provider.expects(:git).with('submodule', 'init')
+            provider.expects(:git).with('submodule', 'update')
             provider.create
           end
         end
@@ -25,15 +30,15 @@ describe_provider :vcsrepo, :git, :resource => {:path => '/tmp/vcsrepo'} do
       resource_with :ensure => :bare do
         resource_with :revision do
           it "should just execute 'git clone --bare'" do
-            subject.expects(:git).with('clone', '--bare', resource.value(:source), resource.value(:path))
-            subject.create
+            provider.expects(:git).with('clone', '--bare', resource.value(:source), resource.value(:path))
+            provider.create
           end
         end
         
         resource_without :revision do
           it "should just execute 'git clone --bare'" do
-            subject.expects(:git).with('clone', '--bare', resource.value(:source), resource.value(:path))
-            subject.create
+            provider.expects(:git).with('clone', '--bare', resource.value(:source), resource.value(:path))
+            provider.create
           end
         end
       end
@@ -134,8 +139,10 @@ describe_provider :vcsrepo, :git, :resource => {:path => '/tmp/vcsrepo'} do
   context "setting the revision property" do
     it "should use 'git fetch' and 'git reset'" do
       expects_chdir
-      provider.expects('git').with('fetch', 'origin')
-      provider.expects('git').with('reset', '--hard', 'carcar')
+      provider.expects(:git).with('fetch', 'origin')
+      provider.expects(:git).with('reset', '--hard', 'carcar')
+      provider.expects(:git).with('submodule', 'init')
+      provider.expects(:git).with('submodule', 'update')
       provider.revision = 'carcar'
     end
   end
@@ -143,7 +150,7 @@ describe_provider :vcsrepo, :git, :resource => {:path => '/tmp/vcsrepo'} do
   context "updating references" do
     it "should use 'git fetch --tags'" do
       expects_chdir
-      provider.expects('git').with('fetch', '--tags', 'origin')
+      provider.expects(:git).with('fetch', '--tags', 'origin')
       provider.update_references
     end
   end
