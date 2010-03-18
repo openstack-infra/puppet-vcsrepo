@@ -1,89 +1,77 @@
 require 'pathname'; Pathname.new(__FILE__).realpath.ascend { |x| begin; require (x + 'spec_helper.rb'); break; rescue LoadError; end }
 
-provider_class = Puppet::Type.type(:vcsrepo).provider(:svn)
+describe_provider :vcsrepo, :svn, :resource => {:path => '/tmp/vcsrepo'} do
 
-describe provider_class do
-
-  before :each do
-    @resource = stub("resource")
-    @provider = provider_class.new(@resource)
-    @path = '/tmp/vcsrepo'
-  end
-
-  describe 'when creating' do
-    context "when a source is given" do
-      context "and when a revision is given" do
+  describe 'creating' do
+    context_with :source do
+      context_with :revision do
         it "should execute 'svn checkout' with a revision" do
-          @resource.expects(:value).with(:path).returns(@path).at_least_once
-          @resource.expects(:value).with(:source).returns('svn://example.com/repo').at_least_once
-          @resource.expects(:value).with(:revision).returns('1234').at_least_once
-          @provider.expects(:svn).with('checkout', '-r', '1234', 'svn://example.com/repo', @path)
-          @provider.create
+          provider.expects(:svn).with('checkout', '-r',
+                                      resource.value(:revision),
+                                      resource.value(:source),
+                                      resource.value(:path))
+          provider.create
         end        
       end
-      context "and when a revision is not given" do
+      context_without :revision do
         it "should just execute 'svn checkout' without a revision" do
-          @resource.expects(:value).with(:path).returns(@path).at_least_once
-          @resource.expects(:value).with(:source).returns('svn://example.com/repo').at_least_once
-          @resource.expects(:value).with(:revision).returns(nil).at_least_once
-          @provider.expects(:svn).with('checkout','svn://example.com/repo', @path)
-          @provider.create
+          provider.expects(:svn).with('checkout',
+                                      resource.value(:source),
+                                      resource.value(:path))
+          provider.create
         end        
       end
     end
-    context "when a source is not given" do
-      context "when a fstype is given" do
+    context_without :source do
+      context_with :fstype do
         it "should execute 'svnadmin create' with an '--fs-type' option" do
-          @resource.expects(:value).with(:path).returns(@path).at_least_once
-          @resource.expects(:value).with(:fstype).returns('fsfs').at_least_once
-          @resource.expects(:value).with(:source).returns(nil)
-          @provider.expects(:svnadmin).with('create', '--fs-type', 'fsfs', @path)
-          @provider.create
+          provider.expects(:svnadmin).with('create', '--fs-type',
+                                           resource.value(:fstype),
+                                           resource.value(:path))
+          provider.create
         end
       end
-      context "when a fstype is not given" do
+      context_without :fstype do
         it "should execute 'svnadmin create' without an '--fs-type' option" do
-          @resource.expects(:value).with(:path).returns(@path).at_least_once
-          @resource.expects(:value).with(:source).returns(nil)
-          @resource.expects(:value).with(:fstype).returns(nil).at_least_once
-          @provider.expects(:svnadmin).with('create', @path)
-          @provider.create
+          provider.expects(:svnadmin).with('create', resource.value(:path))
+          provider.create
         end
       end
     end
   end
 
-  describe 'when destroying' do
+  describe 'destroying' do
     it "it should remove the directory" do
-      @resource.expects(:value).with(:path).returns(@path).at_least_once
-      FileUtils.expects(:rm_rf).with(@path)
-      @provider.destroy
+      expects_rm_rf
+      provider.destroy
     end
   end
 
-  describe "when checking existence" do
+  describe "checking existence" do
     it "should check for the directory" do
-      @resource.expects(:value).with(:path).returns(@path)
-      File.expects(:directory?).with(@path)
-      @provider.exists?
+      expects_directory?(true, File.join(resource.value(:path), '.svn'))
+      provider.exists?
     end
   end
 
-  describe "when checking the revision property" do
+  describe "checking the revision property" do
+    before do
+      provider.expects('svn').with('info').returns(fixture(:svn_info))
+    end
     it "should use 'svn info'" do
-      @resource.expects(:value).with(:path).returns(@path)
-      @provider.expects('svn').with('info').returns(fixture(:svn_info))
-      Dir.expects(:chdir).with(@path).yields
-      @provider.revision.should == '4'
+      expects_chdir
+      provider.revision.should == '4'
     end
   end
   
-  describe "when setting the revision property" do
+  describe "setting the revision property" do
+    before do
+      @revision = '30'
+    end
     it "should use 'svn update'" do
-      @resource.expects(:value).with(:path).returns(@path)
-      @provider.expects('svn').with('update', '-r', '30')
-      Dir.expects(:chdir).with(@path).yields
-      @provider.revision = '30'
+      expects_chdir
+      provider.expects('svn').with('update', '-r', @revision)
+      provider.revision = @revision
     end
   end
 

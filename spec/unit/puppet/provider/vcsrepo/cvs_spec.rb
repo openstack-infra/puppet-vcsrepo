@@ -39,7 +39,7 @@ describe_provider :vcsrepo, :cvs, :resource => {:path => '/tmp/vcsrepo'} do
 
   describe 'destroying' do
     it "it should remove the directory" do
-      FileUtils.expects(:rm_rf).with(resource.value(:path))
+      expects_rm_rf
       provider.destroy
     end
   end

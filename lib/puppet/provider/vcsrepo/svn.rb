@@ -20,7 +20,7 @@ Puppet::Type.type(:vcsrepo).provide(:svn, :parent => Puppet::Provider::Vcsrepo) 
   end
 
   def exists?
-    File.directory?(@resource.value(:path))
+    File.directory?(File.join(@resource.value(:path), '.svn'))
   end
 
   def destroy

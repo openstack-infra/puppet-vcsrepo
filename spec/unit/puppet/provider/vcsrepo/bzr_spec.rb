@@ -27,14 +27,14 @@ describe_provider :vcsrepo, :bzr, :resource => {:path => '/tmp/vcsrepo'} do
 
   describe 'destroying' do
     it "it should remove the directory" do
-      FileUtils.expects(:rm_rf).with(resource.value(:path))
+      expects_rm_rf
       provider.destroy
     end
   end
 
   describe "checking existence" do
     it "should check for the directory" do
-      File.expects(:directory?).with(File.join(resource.value(:path), '.bzr'))
+      expects_directory?(true, File.join(resource.value(:path), '.bzr'))
       provider.exists?
     end
   end

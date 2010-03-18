@@ -45,8 +45,8 @@ describe_provider :vcsrepo, :git, :resource => {:path => '/tmp/vcsrepo'} do
           it "should execute 'git init'" do
             expects_mkdir
             expects_chdir
+            expects_directory?(false)
             provider.expects(:bare_exists?).returns(false)
-            File.expects(:directory?).with(resource.value(:path)).returns(false)
             provider.expects(:git).with('init')
             provider.create
           end
@@ -62,7 +62,7 @@ describe_provider :vcsrepo, :git, :resource => {:path => '/tmp/vcsrepo'} do
         
         context "when the path is not a repository" do
           it "should raise an exception" do
-            File.expects(:directory?).with(resource.value(:path)).returns(true)
+            expects_directory?(true)
             provider.expects(:bare_exists?).returns(false)
             proc { provider.create }.should raise_error(Puppet::Error)
           end
@@ -74,7 +74,7 @@ describe_provider :vcsrepo, :git, :resource => {:path => '/tmp/vcsrepo'} do
           it "should execute 'git init --bare'" do
             expects_chdir
             expects_mkdir
-            File.expects(:directory?).with(resource.value(:path)).returns(false)
+            expects_directory?(false)
             provider.expects(:working_copy_exists?).returns(false)
             provider.expects(:git).with('init', '--bare')
             provider.create
@@ -91,7 +91,7 @@ describe_provider :vcsrepo, :git, :resource => {:path => '/tmp/vcsrepo'} do
         
         context "when the path is not a repository" do
           it "should raise an exception" do
-            File.expects(:directory?).with(resource.value(:path)).returns(true)
+            expects_directory?(true)
             provider.expects(:working_copy_exists?).returns(false)
             proc { provider.create }.should raise_error(Puppet::Error)
           end
@@ -101,7 +101,7 @@ describe_provider :vcsrepo, :git, :resource => {:path => '/tmp/vcsrepo'} do
     
     context 'destroying' do
       it "it should remove the directory" do
-        FileUtils.expects(:rm_rf).with(resource.value(:path))
+        expects_rm_rf
         provider.destroy
       end
     end

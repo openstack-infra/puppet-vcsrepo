@@ -13,10 +13,6 @@ class ProviderExampleGroup < Spec::Example::ExampleGroup
   subject { described_class.new(@resource) }
   alias :provider :subject
 
-  def _(name)
-    resource.value(name)
-  end
-
   class << self
 
     def field(field, &block)

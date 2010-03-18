@@ -4,7 +4,7 @@ $LOAD_PATH.unshift(dir, dir + 'lib', dir + '../lib')
 
 require 'mocha'
 require 'puppet'
-gem 'rspec', '=1.2.9'
+gem 'rspec', '>= 1.2.9'
 require 'spec/autorun'
 
 Dir[File.join(File.dirname(__FILE__), 'support', '*.rb')].each do |support_file|
@@ -14,7 +14,7 @@ end
 Spec::Runner.configure do |config|
   config.mock_with :mocha
   config.include(FixtureHelpers)
-  config.include(VcsrepoHelpers)
+  config.include(FilesystemHelpers)
 end
 
 # We need this because the RAL uses 'should' as a method.  This
