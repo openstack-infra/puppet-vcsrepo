@@ -16,7 +16,7 @@ Puppet::Type.type(:vcsrepo).provide(:git, :parent => Puppet::Provider::Vcsrepo) 
         if @resource.value(:ensure) == :bare
           notice "Ignoring revision for bare repository"
         else
-          reset(@resource.value(:revision))
+          checkout_branch_or_reset
         end
       end
       if @resource.value(:ensure) != :bare
@@ -41,9 +41,24 @@ Puppet::Type.type(:vcsrepo).provide(:git, :parent => Puppet::Provider::Vcsrepo) 
 
   def revision=(desired)
     fetch
-    reset(desired)
-    unless @resource.value(:ensure) == :bare
+    if local_revision_branch?(desired)
+      at_path do
+        git('checkout', desired)
+        git('pull', 'origin')
+      end
       update_submodules
+    elsif remote_revision_branch?(desired)
+      at_path do
+        git('checkout',
+            '-b', @resource.value(:revision),
+            '--track', "origin/#{@resource.value(:revision)}")
+      end
+      update_submodules
+    else
+      reset(desired)
+      if @resource.value(:ensure) != :bare
+        update_submodules
+      end
     end
   end
 
@@ -90,6 +105,12 @@ Puppet::Type.type(:vcsrepo).provide(:git, :parent => Puppet::Provider::Vcsrepo) 
     end
   end
 
+  def pull
+    at_path do
+      git('pull', 'origin')
+    end
+  end
+  
   def init_repository(path)
     if @resource.value(:ensure) == :bare && working_copy_exists?
       convert_working_copy_to_bare
@@ -150,6 +171,16 @@ Puppet::Type.type(:vcsrepo).provide(:git, :parent => Puppet::Provider::Vcsrepo) 
     false
   end
 
+  def checkout_branch_or_reset
+    if remote_revision_branch?
+      at_path do
+        git('checkout', '-b', @resource.value(:revision), '--track', "origin/#{@resource.value(:revision)}")
+      end
+    else
+      reset(@resource.value(:revision))
+    end
+  end
+
   def reset(desired)
     at_path do
       git('reset', '--hard', desired)
@@ -161,6 +192,22 @@ Puppet::Type.type(:vcsrepo).provide(:git, :parent => Puppet::Provider::Vcsrepo) 
       git('submodule', 'init')
       git('submodule', 'update')
     end
+  end
+
+  def remote_branch_revision?(revision = @resource.value(:revision))
+    at_path do
+      branches.include?("origin/#{revision}")
+    end
+  end
+
+  def local_branch_revision?(revision = @resource.value(:revision))
+    at_path do
+      branches.include?(revision)
+    end
+  end
+
+  def branches
+    at_path { git('branch', '-a') }.gsub('*', ' ').split(/\n/).map { |line| line.strip }
   end
 
 end

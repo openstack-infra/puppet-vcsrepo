@@ -1,27 +1,34 @@
 require 'pathname'; Pathname.new(__FILE__).realpath.ascend { |x| begin; require (x + 'spec_helper.rb'); break; rescue LoadError; end }
 
 describe_provider :vcsrepo, :git, :resource => {:path => '/tmp/vcsrepo'} do
-  
+
   context 'creating' do
     resource_with :source do
       resource_with :ensure => :present do
-        resource_with :revision do
-          it "should execute 'git clone' and 'git reset --hard'" do
+        context "with a revision that is a remote branch", :resource => {:revision => 'only/remote'} do
+          it "should execute 'git clone' and 'git checkout -b'" do
             provider.expects('git').with('clone', resource.value(:source), resource.value(:path))
             expects_chdir
-            provider.expects('git').with('reset', '--hard', resource.value(:revision))
-            provider.expects(:git).with('submodule', 'init')
-            provider.expects(:git).with('submodule', 'update')
+            provider.expects(:remote_revision_branch?).returns(true)
+            provider.expects(:git).with('checkout', '-b', resource.value(:revision), '--track', "origin/#{resource.value(:revision)}")
+            provider.expects(:update_submodules)
             provider.create
           end
         end
-        
+        context "with a revision that is not a remote branch", :resource => {:revision => 'a-commit-or-tag'} do
+          it "should execute 'git clone' and 'git reset --hard'" do
+            provider.expects('git').with('clone', resource.value(:source), resource.value(:path))
+            expects_chdir
+            provider.expects(:remote_revision_branch?).returns(false)
+            provider.expects('git').with('reset', '--hard', resource.value(:revision))
+            provider.expects(:update_submodules)
+            provider.create
+          end
+        end        
         resource_without :revision do
           it "should execute 'git clone' and submodule commands" do
             provider.expects(:git).with('clone', resource.value(:source), resource.value(:path))
-            expects_chdir
-            provider.expects(:git).with('submodule', 'init')
-            provider.expects(:git).with('submodule', 'update')
+            provider.expects(:update_submodules)
             provider.create
           end
         end
@@ -137,14 +144,40 @@ describe_provider :vcsrepo, :git, :resource => {:path => '/tmp/vcsrepo'} do
   end
   
   context "setting the revision property" do
-    it "should use 'git fetch' and 'git reset'" do
+    before do
       expects_chdir
       provider.expects(:git).with('fetch', 'origin')
-      provider.expects(:git).with('reset', '--hard', 'carcar')
-      provider.expects(:git).with('submodule', 'init')
-      provider.expects(:git).with('submodule', 'update')
-      provider.revision = 'carcar'
     end
+    context "when it's an existing local branch", :resource => {:revision => 'feature/foo'} do
+      it "should use 'git fetch' and 'git reset'" do
+        provider.expects(:local_revision_branch?).returns(true)
+        provider.expects(:git).with('checkout', resource.value(:revision))
+        provider.expects(:git).with('pull', 'origin')
+        provider.expects(:update_submodules)
+        provider.revision = resource.value(:revision)
+      end
+    end
+    context "when it's a remote branch", :resource => {:revision => 'only/remote'} do
+      it "should use 'git fetch' and 'git reset'" do
+        provider.expects(:local_revision_branch?).returns(false)
+        provider.expects(:remote_revision_branch?).returns(true)
+        provider.expects(:git).with('checkout',
+                                    '-b', resource.value(:revision),
+                                    '--track', "origin/#{resource.value(:revision)}")
+        provider.expects(:update_submodules)
+        provider.revision = resource.value(:revision)
+      end
+    end
+    context "when it's a commit or tag", :resource => {:revision => 'a-commit-or-tag'} do
+      it "should use 'git fetch' and 'git reset'" do
+        provider.expects(:local_revision_branch?).returns(false)
+        provider.expects(:remote_revision_branch?).returns(false)
+        provider.expects(:git).with('reset', '--hard', resource.value(:revision))
+        provider.expects(:git).with('submodule', 'init')
+        provider.expects(:git).with('submodule', 'update')
+        provider.revision = resource.value(:revision)
+      end
+    end    
   end
   
   context "updating references" do
@@ -153,6 +186,37 @@ describe_provider :vcsrepo, :git, :resource => {:path => '/tmp/vcsrepo'} do
       provider.expects(:git).with('fetch', '--tags', 'origin')
       provider.update_references
     end
+  end
+
+  context "checking if revision" do
+    before do
+      expects_chdir
+      provider.expects(:git).with('branch', '-a').returns(fixture(:git_branch_a))
+    end
+    context "is a local branch" do
+      context "when it's listed in 'git branch -a'", :resource => {:revision => 'feature/foo'} do
+        it "should return true" do
+          provider.should be_local_branch_revision
+        end
+      end
+      context "when it's not listed in 'git branch -a'" , :resource => {:revision => 'feature/notexist'}do
+        it "should return false" do
+          provider.should_not be_local_branch_revision
+        end
+      end
+    end
+    context "is a remote branch" do
+      context "when it's listed in 'git branch -a' with an 'origin/' prefix", :resource => {:revision => 'only/remote'} do
+        it "should return true" do
+          provider.should be_remote_branch_revision
+        end
+      end
+      context "when it's not listed in 'git branch -a' with an 'origin/' prefix" , :resource => {:revision => 'only/local'}do
+        it "should return false" do
+          provider.should_not be_remote_branch_revision
+        end
+      end
+    end    
   end
   
 end
