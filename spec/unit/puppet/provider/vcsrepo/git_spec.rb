@@ -98,53 +98,54 @@ describe_provider :vcsrepo, :git, :resource => {:path => '/tmp/vcsrepo'} do
         end
       end
     end
-    
-    context 'destroying' do
-      it "it should remove the directory" do
-        expects_rm_rf
-        provider.destroy
-      end
-    end
-    
-    context "checking the revision property" do
-      context_with_resource :revision do
-        before do
-          expects_chdir
-          provider.expects(:git).with('rev-parse', 'HEAD').returns('currentsha')
-        end
-        
-        context "when its SHA is not different than the current SHA" do
-          it "should return the ref" do
-            provider.expects(:git).with('rev-parse', resource.value(:revision)).returns('currentsha')
-            provider.revision.should == resource.value(:revision)
-          end
-        end
-        
-        context "when its SHA is different than the current SHA" do
-          it "should return the current SHA" do
-            provider.expects(:git).with('rev-parse', resource.value(:revision)).returns('othersha')
-            provider.revision.should == 'currentsha'
-          end
-        end
-      end
-    end
-    
-    context "setting the revision property" do
-      it "should use 'git fetch' and 'git reset'" do
-        expects_chdir
-        provider.expects('git').with('fetch', 'origin')
-        provider.expects('git').with('reset', '--hard', 'carcar')
-        provider.revision = 'carcar'
-      end
-    end
-    
-    context "updating references" do
-      it "should use 'git fetch --tags'" do
-        expects_chdir
-        provider.expects('git').with('fetch', '--tags', 'origin')
-        provider.update_references
-      end
-    end
-    
+
   end
+  
+  context 'destroying' do
+    it "it should remove the directory" do
+      expects_rm_rf
+      provider.destroy
+    end
+  end
+  
+  context "checking the revision property" do
+    context_with_resource :revision do
+      before do
+        expects_chdir
+        provider.expects(:git).with('rev-parse', 'HEAD').returns('currentsha')
+      end
+      
+      context "when its SHA is not different than the current SHA" do
+        it "should return the ref" do
+          provider.expects(:git).with('rev-parse', resource.value(:revision)).returns('currentsha')
+          provider.revision.should == resource.value(:revision)
+        end
+      end
+      
+      context "when its SHA is different than the current SHA" do
+        it "should return the current SHA" do
+          provider.expects(:git).with('rev-parse', resource.value(:revision)).returns('othersha')
+          provider.revision.should == 'currentsha'
+        end
+      end
+    end
+  end
+  
+  context "setting the revision property" do
+    it "should use 'git fetch' and 'git reset'" do
+      expects_chdir
+      provider.expects('git').with('fetch', 'origin')
+      provider.expects('git').with('reset', '--hard', 'carcar')
+      provider.revision = 'carcar'
+    end
+  end
+  
+  context "updating references" do
+    it "should use 'git fetch --tags'" do
+      expects_chdir
+      provider.expects('git').with('fetch', '--tags', 'origin')
+      provider.update_references
+    end
+  end
+  
 end
