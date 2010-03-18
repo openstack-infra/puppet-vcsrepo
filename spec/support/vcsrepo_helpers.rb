@@ -1,12 +1,11 @@
 module VcsrepoHelpers
 
-  def expects_chdir
-    Dir.expects(:chdir).with(resource.value(:path)).at_least_once.yields
+  def expects_chdir(path = resource.value(:path))
+    Dir.expects(:chdir).with(path).at_least_once.yields
   end
   
-  def expects_mkdir
-    Dir.expects(:mkdir).with(resource.value(:path)).at_least_once
+  def expects_mkdir(path = resource.value(:path))
+    Dir.expects(:mkdir).with(path).at_least_once
   end
 
-  
 end
