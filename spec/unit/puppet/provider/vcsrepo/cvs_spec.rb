@@ -4,7 +4,7 @@ describe_provider :vcsrepo, :cvs, :resource => {:path => '/tmp/vcsrepo'} do
 
   describe 'creating' do
     context "with a source", :resource => {:source => ':ext:source@example.com:/foo/bar'} do
-      context_with_resource :revision do
+      resource_with :revision do
         it "should execute 'cvs checkout' and 'cvs update -r'" do
           expects_chdir
           expects_chdir(File.dirname(resource.value(:path)))
@@ -14,7 +14,7 @@ describe_provider :vcsrepo, :cvs, :resource => {:path => '/tmp/vcsrepo'} do
         end        
       end
       
-      context_without_resource :revision do
+      resource_without :revision do
         it "should just execute 'cvs checkout' without a revision" do
           provider.expects(:cvs).with('-d', resource.value(:source), 'checkout', '-d', File.basename(resource.value(:path)), File.basename(resource.value(:source)))
           provider.create
@@ -45,14 +45,14 @@ describe_provider :vcsrepo, :cvs, :resource => {:path => '/tmp/vcsrepo'} do
   end
 
   describe "checking existence" do
-    context_with_resource :source do
+    resource_with :source do
       it "should check for the CVS directory" do
         File.expects(:directory?).with(File.join(resource.value(:path), 'CVS'))
         provider.exists?
       end
     end
     
-    context_without_resource :source do
+    resource_without :source do
       it "should check for the CVSROOT directory" do
         File.expects(:directory?).with(File.join(resource.value(:path), 'CVSROOT'))
         provider.exists?
