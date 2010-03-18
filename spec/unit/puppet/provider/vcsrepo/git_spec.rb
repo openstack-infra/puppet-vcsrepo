@@ -3,9 +3,9 @@ require 'pathname'; Pathname.new(__FILE__).realpath.ascend { |x| begin; require 
 describe_provider :vcsrepo, :git, :resource => {:path => '/tmp/vcsrepo'} do
   
   context 'creating' do
-    context_with :source do
-      context_with :ensure => :present do
-        context_with :revision do
+    context_with_resource :source do
+      context_with_resource :ensure => :present do
+        context_with_resource :revision do
           it "should execute 'git clone' and 'git reset --hard'" do
             provider.expects('git').with('clone', resource.value(:source), resource.value(:path))
             expects_chdir
@@ -14,7 +14,7 @@ describe_provider :vcsrepo, :git, :resource => {:path => '/tmp/vcsrepo'} do
           end
         end
         
-        context_without :revision do
+        context_without_resource :revision do
           it "should just execute 'git clone'" do
             provider.expects(:git).with('clone', resource.value(:source), resource.value(:path))
             provider.create
@@ -22,15 +22,15 @@ describe_provider :vcsrepo, :git, :resource => {:path => '/tmp/vcsrepo'} do
         end
       end
       
-      context_with :ensure => :bare do
-        context_with :revision do
+      context_with_resource :ensure => :bare do
+        context_with_resource :revision do
           it "should just execute 'git clone --bare'" do
             subject.expects(:git).with('clone', '--bare', resource.value(:source), resource.value(:path))
             subject.create
           end
         end
         
-        context_without :revision do
+        context_without_resource :revision do
           it "should just execute 'git clone --bare'" do
             subject.expects(:git).with('clone', '--bare', resource.value(:source), resource.value(:path))
             subject.create
@@ -40,7 +40,7 @@ describe_provider :vcsrepo, :git, :resource => {:path => '/tmp/vcsrepo'} do
     end
     
     context "when a source is not given" do
-      context_with :ensure => :present do
+      context_with_resource :ensure => :present do
         context "when the path does not exist" do
           it "should execute 'git init'" do
             expects_mkdir
@@ -69,7 +69,7 @@ describe_provider :vcsrepo, :git, :resource => {:path => '/tmp/vcsrepo'} do
         end
       end
       
-      context_with :ensure => :bare do
+      context_with_resource :ensure => :bare do
         context "when the path does not exist" do
           it "should execute 'git init --bare'" do
             expects_chdir
@@ -107,7 +107,7 @@ describe_provider :vcsrepo, :git, :resource => {:path => '/tmp/vcsrepo'} do
     end
     
     context "checking the revision property" do
-      context_with :revision do
+      context_with_resource :revision do
         before do
           expects_chdir
           provider.expects(:git).with('rev-parse', 'HEAD').returns('currentsha')

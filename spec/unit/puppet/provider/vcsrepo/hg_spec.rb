@@ -3,8 +3,8 @@ require 'pathname'; Pathname.new(__FILE__).realpath.ascend { |x| begin; require 
 describe_provider :vcsrepo, :hg, :resource => {:path => '/tmp/vcsrepo'} do
 
   describe 'creating' do
-    context_with :source do
-      context_with :revision do
+    context_with_resource :source do
+      context_with_resource :revision do
         it "should execute 'hg clone -u' with the revision" do
           provider.expects(:hg).with('clone', '-u',
                                       resource.value(:revision),
@@ -14,7 +14,7 @@ describe_provider :vcsrepo, :hg, :resource => {:path => '/tmp/vcsrepo'} do
         end        
       end
       
-      context_without :revision do
+      context_without_resource :revision do
         it "should just execute 'hg clone' without a revision" do
           provider.expects(:hg).with('clone', resource.value(:source), resource.value(:path))
           provider.create

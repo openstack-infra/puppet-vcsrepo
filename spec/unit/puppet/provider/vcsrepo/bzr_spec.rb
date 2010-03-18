@@ -3,21 +3,21 @@ require 'pathname'; Pathname.new(__FILE__).realpath.ascend { |x| begin; require 
 describe_provider :vcsrepo, :bzr, :resource => {:path => '/tmp/vcsrepo'} do
 
   describe 'creating' do
-    context_with :source do
-      context_with :revision do
+    context_with_resource :source do
+      context_with_resource :revision do
         it "should execute 'bzr clone -r' with the revision" do
           provider.expects(:bzr).with('branch', '-r', resource.value(:revision), resource.value(:source), resource.value(:path))
           provider.create
         end
       end
-      context_without :revision do
+      context_without_resource :revision do
         it "should just execute 'bzr clone' without a revision" do
           provider.expects(:bzr).with('branch', resource.value(:source), resource.value(:path))
           provider.create
         end
       end
     end
-    context_without :source do
+    context_without_resource :source do
       it "should execute 'bzr init'" do
         provider.expects(:bzr).with('init', resource.value(:path))
         provider.create

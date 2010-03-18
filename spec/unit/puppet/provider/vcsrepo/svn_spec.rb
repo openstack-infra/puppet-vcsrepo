@@ -3,8 +3,8 @@ require 'pathname'; Pathname.new(__FILE__).realpath.ascend { |x| begin; require 
 describe_provider :vcsrepo, :svn, :resource => {:path => '/tmp/vcsrepo'} do
 
   describe 'creating' do
-    context_with :source do
-      context_with :revision do
+    context_with_resource :source do
+      context_with_resource :revision do
         it "should execute 'svn checkout' with a revision" do
           provider.expects(:svn).with('checkout', '-r',
                                       resource.value(:revision),
@@ -13,7 +13,7 @@ describe_provider :vcsrepo, :svn, :resource => {:path => '/tmp/vcsrepo'} do
           provider.create
         end        
       end
-      context_without :revision do
+      context_without_resource :revision do
         it "should just execute 'svn checkout' without a revision" do
           provider.expects(:svn).with('checkout',
                                       resource.value(:source),
@@ -22,8 +22,8 @@ describe_provider :vcsrepo, :svn, :resource => {:path => '/tmp/vcsrepo'} do
         end        
       end
     end
-    context_without :source do
-      context_with :fstype do
+    context_without_resource :source do
+      context_with_resource :fstype do
         it "should execute 'svnadmin create' with an '--fs-type' option" do
           provider.expects(:svnadmin).with('create', '--fs-type',
                                            resource.value(:fstype),
@@ -31,7 +31,7 @@ describe_provider :vcsrepo, :svn, :resource => {:path => '/tmp/vcsrepo'} do
           provider.create
         end
       end
-      context_without :fstype do
+      context_without_resource :fstype do
         it "should execute 'svnadmin create' without an '--fs-type' option" do
           provider.expects(:svnadmin).with('create', resource.value(:path))
           provider.create

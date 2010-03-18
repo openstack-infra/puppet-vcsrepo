@@ -23,7 +23,7 @@ class ProviderExampleGroup < Spec::Example::ExampleGroup
     #
     #   given(:ensure)
     #   given(:ensure => :present)
-    def context_with(*args, &block)
+    def context_with_resource(*args, &block)
       options = args.last.is_a?(Hash) ? args.pop : {}
       if args.empty?
         text = options.map { |k, v| "#{k} => #{v.inspect}" }.join(' and with ')
@@ -35,7 +35,7 @@ class ProviderExampleGroup < Spec::Example::ExampleGroup
       end
     end
 
-    def context_without(field, &block)
+    def context_without_resource(field, &block)
       context("and without a #{field}", &block)
     end
       
