@@ -7,17 +7,14 @@ require 'puppet'
 gem 'rspec', '=1.2.9'
 require 'spec/autorun'
 
-module Helpers
-
-  def fixture(name, ext = '.txt')
-    File.read(File.join(File.dirname(__FILE__), 'fixtures', name.to_s + ext))
-  end
-  
+Dir[File.join(File.dirname(__FILE__), 'support', '*.rb')].each do |support_file|
+  require support_file
 end
 
 Spec::Runner.configure do |config|
   config.mock_with :mocha
-  config.include(Helpers)
+  config.include(FixtureHelpers)
+  config.include(VcsrepoHelpers)
 end
 
 # We need this because the RAL uses 'should' as a method.  This

@@ -37,7 +37,7 @@ Puppet::Type.type(:vcsrepo).provide(:git, :parent => Puppet::Provider::Vcsrepo) 
   end
 
   def revision=(desired)
-    pull
+    fetch
     reset(desired)
   end
 
@@ -78,9 +78,9 @@ Puppet::Type.type(:vcsrepo).provide(:git, :parent => Puppet::Provider::Vcsrepo) 
     git(*args)
   end
 
-  def pull
+  def fetch
     at_path do
-      git('pull', 'origin')
+      git('fetch', 'origin')
     end
   end
 
