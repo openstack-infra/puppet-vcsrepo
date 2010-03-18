@@ -2,37 +2,37 @@ require 'pathname'; Pathname.new(__FILE__).realpath.ascend { |x| begin; require 
 
 describe_provider :vcsrepo, :git, :resource => {:path => '/tmp/vcsrepo'} do
   
-  context 'when creating' do
-    context "when a source is given", :resource => {:source => 'git://example.com/repo.git'} do
-      context "when ensure => present", :resource => {:ensure => :present} do
-        context "when a revision is given", :resource => {:revision => 'abcdef'} do
+  context 'creating' do
+    context_with :source do
+      context_with :ensure => :present do
+        context_with :revision do
           it "should execute 'git clone' and 'git reset --hard'" do
             provider.expects('git').with('clone', resource.value(:source), resource.value(:path))
             expects_chdir
-            provider.expects('git').with('reset', '--hard', 'abcdef')
+            provider.expects('git').with('reset', '--hard', resource.value(:revision))
             provider.create
           end
         end
         
-        context "when a revision is not given" do
+        context_without :revision do
           it "should just execute 'git clone'" do
-            provider.expects(:git).with('clone', 'git://example.com/repo.git', resource.value(:path))
+            provider.expects(:git).with('clone', resource.value(:source), resource.value(:path))
             provider.create
           end
         end
       end
       
-      context "when ensure => bare", :resource => {:ensure => :bare} do
-        context "when a revision is given", :resource => {:revision => 'abcdef'} do
+      context_with :ensure => :bare do
+        context_with :revision do
           it "should just execute 'git clone --bare'" do
-            subject.expects(:git).with('clone', '--bare', 'git://example.com/repo.git', resource.value(:path))
+            subject.expects(:git).with('clone', '--bare', resource.value(:source), resource.value(:path))
             subject.create
           end
         end
         
-        context "when a revision is not given" do
+        context_without :revision do
           it "should just execute 'git clone --bare'" do
-            subject.expects(:git).with('clone', '--bare', 'git://example.com/repo.git', resource.value(:path))
+            subject.expects(:git).with('clone', '--bare', resource.value(:source), resource.value(:path))
             subject.create
           end
         end
@@ -40,7 +40,7 @@ describe_provider :vcsrepo, :git, :resource => {:path => '/tmp/vcsrepo'} do
     end
     
     context "when a source is not given" do
-      context "when ensure => present", :resource => {:ensure => :present} do
+      context_with :ensure => :present do
         context "when the path does not exist" do
           it "should execute 'git init'" do
             expects_mkdir
@@ -69,7 +69,7 @@ describe_provider :vcsrepo, :git, :resource => {:path => '/tmp/vcsrepo'} do
         end
       end
       
-      context "when ensure = bare", :resource => {:ensure => :bare} do
+      context_with :ensure => :bare do
         context "when the path does not exist" do
           it "should execute 'git init --bare'" do
             expects_chdir
@@ -99,56 +99,37 @@ describe_provider :vcsrepo, :git, :resource => {:path => '/tmp/vcsrepo'} do
       end
     end
     
-    context 'when destroying' do
+    context 'destroying' do
       it "it should remove the directory" do
         FileUtils.expects(:rm_rf).with(resource.value(:path))
         provider.destroy
       end
     end
     
-    context "when checking the revision property" do
-      context "when given a non-SHA ref as the resource revision", :resource => {:revision => 'a-tag'} do
+    context "checking the revision property" do
+      context_with :revision do
+        before do
+          expects_chdir
+          provider.expects(:git).with('rev-parse', 'HEAD').returns('currentsha')
+        end
+        
         context "when its SHA is not different than the current SHA" do
           it "should return the ref" do
-            expects_chdir
-            provider.expects(:git).with('rev-parse', 'HEAD').returns('currentsha')
-            provider.expects(:git).with('rev-parse', 'a-tag').returns('currentsha')
-            provider.revision.should == 'a-tag'
+            provider.expects(:git).with('rev-parse', resource.value(:revision)).returns('currentsha')
+            provider.revision.should == resource.value(:revision)
           end
         end
         
         context "when its SHA is different than the current SHA" do
           it "should return the current SHA" do
-            expects_chdir
-            provider.expects(:git).with('rev-parse', 'HEAD').returns('currentsha')
-            provider.expects(:git).with('rev-parse', 'a-tag').returns('othersha')
-            provider.revision.should == 'currentsha'
-          end
-        end
-      end
-      
-      context "when given a SHA ref as the resource revision" do
-        context "when it is the same as the current SHA", :resource => {:revision => 'currentsha'} do
-          it "should return it" do
-            expects_chdir
-            provider.expects(:git).with('rev-parse', 'HEAD').returns('currentsha')
-            provider.expects(:git).with('rev-parse', 'currentsha').returns('currentsha')
-            provider.revision.should == 'currentsha'
-          end
-        end
-        
-        context "when it is not the same as the current SHA", :resource => {:revision => 'othersha'} do
-          it "should return the current SHA" do
-            expects_chdir
-            provider.expects(:git).with('rev-parse', 'HEAD').returns('currentsha')
-            provider.expects(:git).with('rev-parse', 'othersha').returns('othersha')
+            provider.expects(:git).with('rev-parse', resource.value(:revision)).returns('othersha')
             provider.revision.should == 'currentsha'
           end
         end
       end
     end
     
-    context "when setting the revision property" do
+    context "setting the revision property" do
       it "should use 'git fetch' and 'git reset'" do
         expects_chdir
         provider.expects('git').with('fetch', 'origin')
@@ -157,7 +138,7 @@ describe_provider :vcsrepo, :git, :resource => {:path => '/tmp/vcsrepo'} do
       end
     end
     
-    context "when updating references" do
+    context "updating references" do
       it "should use 'git fetch --tags'" do
         expects_chdir
         provider.expects('git').with('fetch', '--tags', 'origin')

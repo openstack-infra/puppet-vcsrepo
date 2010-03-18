@@ -17,6 +17,34 @@ class ProviderExampleGroup < Spec::Example::ExampleGroup
     resource.value(name)
   end
 
+  class << self
+
+    def field(field, &block)
+      ResourceField.new(self, field, &block)
+    end
+
+    # call-seq:
+    #
+    #   given(:ensure)
+    #   given(:ensure => :present)
+    def context_with(*args, &block)
+      options = args.last.is_a?(Hash) ? args.pop : {}
+      if args.empty?
+        text = options.map { |k, v| "#{k} => #{v.inspect}" }.join(' and with ')
+        context("and with #{text}", {:resource => options}, &block)
+      else
+        text = args.join(', ')
+        placeholders = args.inject({}) { |memo, key| memo.merge(key => 'an-unimportant-value') }
+        context("and with a #{text}", {:resource => placeholders}, &block)
+      end
+    end
+
+    def context_without(field, &block)
+      context("and without a #{field}", &block)
+    end
+      
+  end
+
 end
 
 Spec::Example::ExampleGroupFactory.register(:provider, ProviderExampleGroup)
