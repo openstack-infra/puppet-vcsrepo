@@ -41,13 +41,13 @@ Puppet::Type.type(:vcsrepo).provide(:git, :parent => Puppet::Provider::Vcsrepo) 
 
   def revision=(desired)
     fetch
-    if local_revision_branch?(desired)
+    if local_branch_revision?(desired)
       at_path do
         git('checkout', desired)
         git('pull', 'origin')
       end
       update_submodules
-    elsif remote_revision_branch?(desired)
+    elsif remote_branch_revision?(desired)
       at_path do
         git('checkout',
             '-b', @resource.value(:revision),
@@ -172,7 +172,7 @@ Puppet::Type.type(:vcsrepo).provide(:git, :parent => Puppet::Provider::Vcsrepo) 
   end
 
   def checkout_branch_or_reset
-    if remote_revision_branch?
+    if remote_branch_revision?
       at_path do
         git('checkout', '-b', @resource.value(:revision), '--track', "origin/#{@resource.value(:revision)}")
       end
