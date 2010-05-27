@@ -30,6 +30,8 @@ Puppet::Type.type(:vcsrepo).provide(:git, :parent => Puppet::Provider::Vcsrepo) 
   end
   
   def revision
+    fetch
+    update_references
     current   = at_path { git('rev-parse', 'HEAD') }
     canonical = at_path { git('rev-parse', @resource.value(:revision)) }
     if current == canonical
@@ -41,6 +43,7 @@ Puppet::Type.type(:vcsrepo).provide(:git, :parent => Puppet::Provider::Vcsrepo) 
 
   def revision=(desired)
     fetch
+    update_references
     if local_branch_revision?(desired)
       at_path do
         git('checkout', desired)
