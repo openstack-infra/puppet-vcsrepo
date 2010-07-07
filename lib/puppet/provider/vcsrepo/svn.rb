@@ -26,6 +26,22 @@ Puppet::Type.type(:vcsrepo).provide(:svn, :parent => Puppet::Provider::Vcsrepo) 
   def destroy
     FileUtils.rm_rf(@resource.value(:path))
   end
+
+  def latest?
+    at_path do
+      if self.revision < self.latest then
+        return false
+      else
+        return true
+      end
+    end
+  end
+
+  def latest
+    at_path do
+      svn('info', '-r', 'HEAD')[/^Revision:\s+(\d+)/m, 1]
+    end
+  end
   
   def revision
     at_path do

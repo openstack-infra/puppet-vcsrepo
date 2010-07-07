@@ -19,7 +19,25 @@ Puppet::Type.newtype(:vcsrepo) do
            over time (eg, some VCS tags and branch names)"
   
   ensurable do
+    attr_accessor :latest
+    
+    def insync?(is)
+      @should ||= []
 
+      case should
+        when :present
+          return true unless [:absent, :purged, :held].include?(is)
+        when :latest
+          if provider.latest?
+            return true
+          else
+            self.debug "%s repo revision is %s, latest is %s" %
+                [@resource.name, provider.revision, provider.latest]
+            return false
+           end
+      end
+    end     
+              
     newvalue :present do
       provider.create
     end
@@ -37,7 +55,11 @@ Puppet::Type.newtype(:vcsrepo) do
         if provider.respond_to?(:update_references)
           provider.update_references
         end
-        reference = resource.value(:revision) || provider.revision
+        if provider.respond_to?(:latest?)
+            reference = provider.latest || provider.revision
+        else
+          reference = resource.value(:revision) || provider.revision
+        end
         notice "Updating to latest '#{reference}' revision"
         provider.revision = reference
       else
