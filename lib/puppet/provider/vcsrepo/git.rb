@@ -3,6 +3,7 @@ require File.join(File.dirname(__FILE__), '..', 'vcsrepo')
 Puppet::Type.type(:vcsrepo).provide(:git, :parent => Puppet::Provider::Vcsrepo) do
   desc "Supports Git repositories"
 
+  ##TODO modify the commands below so that the su - is included
   commands :git => 'git'
   defaultfor :git => :exists
   has_features :bare_repositories, :reference_tracking
@@ -30,8 +31,10 @@ Puppet::Type.type(:vcsrepo).provide(:git, :parent => Puppet::Provider::Vcsrepo) 
   end
   
   def revision
-    fetch
-    update_references
+    if !working_copy_exists?
+      create
+    end
+
     current   = at_path { git('rev-parse', 'HEAD') }
     canonical = at_path { git('rev-parse', @resource.value(:revision)) }
     if current == canonical
@@ -43,7 +46,6 @@ Puppet::Type.type(:vcsrepo).provide(:git, :parent => Puppet::Provider::Vcsrepo) 
 
   def revision=(desired)
     fetch
-    update_references
     if local_branch_revision?(desired)
       at_path do
         git('checkout', desired)
@@ -98,8 +100,12 @@ Puppet::Type.type(:vcsrepo).provide(:git, :parent => Puppet::Provider::Vcsrepo) 
     if @resource.value(:ensure) == :bare
       args << '--bare'
     end
-    args.push(source, path)
-    git(*args)
+    if !File.exist?(File.join(@resource.value(:path), '.git'))
+      args.push(source, path)
+      git(*args)
+    else
+      notice "Repo has already been cloned"
+    end
   end
 
   def fetch
