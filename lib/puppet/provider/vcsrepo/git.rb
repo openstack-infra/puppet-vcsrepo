@@ -30,18 +30,19 @@ Puppet::Type.type(:vcsrepo).provide(:git, :parent => Puppet::Provider::Vcsrepo) 
     FileUtils.rm_rf(@resource.value(:path))
   end
   
-  def revision
-    if !working_copy_exists?
-      create
+  def latest?
+    at_path do
+      return self.revision == self.latest
     end
+  end
 
-    current   = at_path { git('rev-parse', 'HEAD') }
-    canonical = at_path { git('rev-parse', @resource.value(:revision)) }
-    if current == canonical
-      @resource.value(:revision)
-    else
-      current
-    end
+  def latest
+    fetch
+    return get_revision('origin/HEAD')
+  end
+
+  def revision
+    return get_revision('HEAD')
   end
 
   def revision=(desired)
@@ -219,4 +220,17 @@ Puppet::Type.type(:vcsrepo).provide(:git, :parent => Puppet::Provider::Vcsrepo) 
     at_path { git('branch', '-a') }.gsub('*', ' ').split(/\n/).map { |line| line.strip }
   end
 
+  def get_revision(rev)
+    if !working_copy_exists?
+      create
+    end
+
+    current = at_path { git('rev-parse', rev).strip }
+    if @resource.value(:revision)
+        canonical = at_path { git('rev-parse', @resource.value(:revision)).strip }
+        current = @resource.value(:revision) if current == canonical
+    end
+
+    return current
+  end
 end
