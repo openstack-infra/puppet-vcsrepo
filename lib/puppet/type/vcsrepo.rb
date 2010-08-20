@@ -28,13 +28,13 @@ Puppet::Type.newtype(:vcsrepo) do
         when :present
           return true unless [:absent, :purged, :held].include?(is)
         when :latest
-          if provider.latest?
+          if is == :latest
             return true
           else
             self.debug "%s repo revision is %s, latest is %s" %
                 [@resource.name, provider.revision, provider.latest]
             return false
-           end
+          end
       end
     end     
               
@@ -70,16 +70,12 @@ Puppet::Type.newtype(:vcsrepo) do
     def retrieve
       prov = @resource.provider
       if prov
-        if prov.class.feature?(:bare_repositories)
-          if prov.working_copy_exists?
-            :present
-          elsif prov.bare_exists?
-            :bare
-          else
-            :absent
-          end
+        if prov.working_copy_exists?
+          prov.latest? ? :latest : :present
+        elsif prov.class.feature?(:bare_repositories) and prov.bare_exists?
+          :bare
         else
-          prov.exists? ? :present : :absent
+          :absent
         end
       else
         raise Puppet::Error, "Could not find provider"
