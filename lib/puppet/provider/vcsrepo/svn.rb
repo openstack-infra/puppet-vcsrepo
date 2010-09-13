@@ -19,8 +19,12 @@ Puppet::Type.type(:vcsrepo).provide(:svn, :parent => Puppet::Provider::Vcsrepo) 
     end
   end
 
-  def exists?
+  def working_copy_exists?
     File.directory?(File.join(@resource.value(:path), '.svn'))
+  end
+
+  def exists?
+    working_copy_exists?
   end
 
   def destroy
