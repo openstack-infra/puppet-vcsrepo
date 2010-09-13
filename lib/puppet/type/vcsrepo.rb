@@ -17,10 +17,10 @@ Puppet::Type.newtype(:vcsrepo) do
   feature :reference_tracking,
           "The provider supports tracking revision references that can change
            over time (eg, some VCS tags and branch names)"
-  
+
   ensurable do
     attr_accessor :latest
-    
+
     def insync?(is)
       @should ||= []
 
@@ -36,8 +36,8 @@ Puppet::Type.newtype(:vcsrepo) do
             return false
           end
       end
-    end     
-              
+    end
+
     newvalue :present do
       provider.create
     end
@@ -106,6 +106,24 @@ Puppet::Type.newtype(:vcsrepo) do
   newproperty(:revision) do
     desc "The revision of the repository"
     newvalue(/^\S+$/)
+  end
+
+  newparam(:owner) do
+    desc "The user/uid that owns the repository files"
+  end
+
+  newparam(:group) do
+    desc "The group/gid that owns the repository files"
+  end
+
+  newparam(:excludes) do
+    desc "Files to be excluded from the repository"
+  end
+
+  newparam(:force) do
+    desc "Force repository creation, destroying any files on the path in the process."
+    newvalues(:true, :false)
+    defaultto false
   end
 
   newparam :compression, :required_features => [:gzip_compression] do
