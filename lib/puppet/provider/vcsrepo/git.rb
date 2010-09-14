@@ -221,11 +221,7 @@ Puppet::Type.type(:vcsrepo).provide(:git, :parent => Puppet::Provider::Vcsrepo) 
   end
 
   def set_excludes
-    open(File.join(@resource.value(:path), '.git/info/exclude'), 'w') do |f|
-      @resource.value(:excludes).each do |ex|
-        f.write(ex + "\n")
-      end
-    end
+    at_path { open('.git/info/exclude', 'w') { |f| @resource.value(:excludes).each { |ex| f.write(ex + "\n") }}}
   end
 
   def get_revision(rev)
