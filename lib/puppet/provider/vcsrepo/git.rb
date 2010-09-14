@@ -38,7 +38,12 @@ Puppet::Type.type(:vcsrepo).provide(:git, :parent => Puppet::Provider::Vcsrepo) 
   end
 
   def latest
-    return get_revision('origin/HEAD')
+    branch = on_branch?
+    if branch == 'master'
+      return get_revision('origin/HEAD')
+    else
+      return get_revision('origin/%s' % branch)
+    end
   end
 
   def revision
@@ -205,6 +210,10 @@ Puppet::Type.type(:vcsrepo).provide(:git, :parent => Puppet::Provider::Vcsrepo) 
 
   def branches
     at_path { git('branch', '-a') }.gsub('*', ' ').split(/\n/).map { |line| line.strip }
+  end
+
+  def on_branch?
+    at_path { git('branch', '-a') }.split(/\n/).grep(/\*/).to_s.gsub('*', '').strip
   end
 
   def tags
