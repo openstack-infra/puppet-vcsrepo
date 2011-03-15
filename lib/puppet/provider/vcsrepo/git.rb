@@ -42,12 +42,19 @@ Puppet::Type.type(:vcsrepo).provide(:git, :parent => Puppet::Provider::Vcsrepo) 
     if branch == 'master'
       return get_revision('origin/HEAD')
     else
-      return get_revision('origin/%s' % branch)
+        return get_revision('origin/%s' % branch)
     end
   end
 
   def revision
-    return get_revision('HEAD')
+    update_references
+    current   = at_path { git('rev-parse', 'HEAD') }
+    canonical = at_path { git('rev-parse', @resource.value(:revision)) }
+    if current == canonical
+      @resource.value(:revision)
+    else
+      current
+    end
   end
 
   def revision=(desired)
