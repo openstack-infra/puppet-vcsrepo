@@ -28,19 +28,45 @@ Puppet::Type.type(:vcsrepo).provide(:cvs, :parent => Puppet::Provider::Vcsrepo) 
     FileUtils.rm_rf(@resource.value(:path))
   end
 
-  def revision
-    if File.exist?(tag_file)
-      contents = File.read(tag_file)
-      # Note: Doesn't differentiate between N and T entries
-      contents[1..-1]
-    else
-      'MAIN'
+  def latest? 
+    debug "Checking for updates because 'ensure => latest'"
+    at_path do
+      # We cannot use -P to prune empty dirs, otherwise
+      # CVS would report those as "missing", regardless
+      # if they have contents or updates.
+      is_current = (cvs('-nq', 'update', '-d').strip == "")
+      if (!is_current) then debug "There are updates available on the checkout's current branch/tag." end
+      return is_current
     end
+  end
+  
+  def latest
+    # CVS does not have a conecpt like commit-IDs or change
+    # sets, so we can only have the current branch name (or the 
+    # requested one, if that differs) as the "latest" revision.
+    should = @resource.value(:revision)
+    current = self.revision
+    return should != current ? should : current
+  end
+
+  def revision
+    if !@rev
+      if File.exist?(tag_file)
+        contents = File.read(tag_file).strip
+        # Note: Doesn't differentiate between N and T entries
+        @rev = contents[1..-1]
+      else
+        @rev = 'HEAD'
+      end
+      debug "Checkout is on branch/tag '#{@rev}'"
+    end
+    return @rev
   end
 
   def revision=(desired)
     at_path do
-      cvs('update', '-r', desired, '.')
+      cvs('update', '-dr', desired, '.')
+      @rev = desired
     end
   end
 
@@ -57,11 +83,12 @@ Puppet::Type.type(:vcsrepo).provide(:cvs, :parent => Puppet::Provider::Vcsrepo) 
       if @resource.value(:compression)
         args.push('-z', @resource.value(:compression))
       end
-      args.push('checkout', '-d', basename, module_name)
+      args.push('checkout')
+      if @resource.value(:revision)
+        args.push('-r', @resource.value(:revision))
+      end
+      args.push('-d', basename, module_name)
       cvs(*args)
-    end
-    if @resource.value(:revision)
-      self.revision = @resource.value(:revision)
     end
   end
 
