@@ -13,6 +13,7 @@ Puppet::Type.type(:vcsrepo).provide(:cvs, :parent => Puppet::Provider::Vcsrepo) 
     else
       checkout_repository
     end
+    update_owner
   end
 
   def exists?
@@ -66,6 +67,7 @@ Puppet::Type.type(:vcsrepo).provide(:cvs, :parent => Puppet::Provider::Vcsrepo) 
   def revision=(desired)
     at_path do
       cvs('update', '-dr', desired, '.')
+      update_owner
       @rev = desired
     end
   end
@@ -104,4 +106,10 @@ Puppet::Type.type(:vcsrepo).provide(:cvs, :parent => Puppet::Provider::Vcsrepo) 
     cvs('-d', path, 'init')
   end
 
+  def update_owner
+    if @resource.value(:owner) or @resource.value(:group)
+      set_ownership
+    end
+  end
+                  
 end
