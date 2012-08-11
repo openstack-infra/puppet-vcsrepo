@@ -75,6 +75,8 @@ Puppet::Type.type(:vcsrepo).provide(:git, :parent => Puppet::Provider::Vcsrepo) 
       # might be worthwhile to have an allow_local_changes param to decide
       # whether to reset or pull when we're ensuring latest.
       at_path { git_with_identity('reset', '--hard', "#{@resource.value(:remote)}/#{desired}") }
+    elsif tag_revision?(desired)
+      at_path { git_with_identity('reset', '--hard', "#{desired}") }
     end
     if @resource.value(:ensure) != :bare
       update_submodules
@@ -96,8 +98,7 @@ Puppet::Type.type(:vcsrepo).provide(:git, :parent => Puppet::Provider::Vcsrepo) 
 
   def update_references
     at_path do
-      checkout
-      git_with_identity('pull', @resource.value(:remote))
+      git_with_identity('fetch', @resource.value(:remote))
       update_owner_and_excludes
     end
   end
@@ -191,10 +192,18 @@ Puppet::Type.type(:vcsrepo).provide(:git, :parent => Puppet::Provider::Vcsrepo) 
   end
 
   def checkout(revision = @resource.value(:revision))
-    if !local_branch_revision? && remote_branch_revision?
-      at_path { git_with_identity('checkout', '-b', revision, '--track', "#{@resource.value(:remote)}/#{revision}") }
-    else
-      at_path { git_with_identity('checkout', '--force', revision) }
+    if tag_revision?(revision)
+      if !local_branch_revision?("tag/#{revision}")
+        at_path { git_with_identity('checkout', '-b', "tag/#{revision}") }
+      else
+        at_path { git_with_identity('checkout', '--force', "tag/#{revision}") }
+      end
+    elsif remote_branch_revision?(revision)
+      if !local_branch_revision?(revision)
+        at_path { git_with_identity('checkout', '-b', revision, '--track', "#{@resource.value(:remote)}/#{revision}") }
+      else
+        at_path { git_with_identity('checkout', '--force', revision) }
+      end
     end
   end
 
@@ -256,7 +265,7 @@ Puppet::Type.type(:vcsrepo).provide(:git, :parent => Puppet::Provider::Vcsrepo) 
     end
     current = at_path { git_with_identity('rev-parse', rev).strip }
     if @resource.value(:revision)
-      if local_branch_revision?
+      if local_branch_revision? or tag_revision?
         canonical = at_path { git_with_identity('rev-parse', @resource.value(:revision)).strip }
       elsif remote_branch_revision?
         canonical = at_path { git_with_identity('rev-parse', "#{@resource.value(:remote)}/" + @resource.value(:revision)).strip }
