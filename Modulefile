@@ -1,2 +1,2 @@
-name 'puppetlabs/vcsrepo'
+name 'openstackci/vcsrepo'
 version '0.0.4'
