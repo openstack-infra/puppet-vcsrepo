@@ -36,7 +36,6 @@ Puppet::Type.newtype(:vcsrepo) do
 
     def insync?(is)
       @should ||= []
-
       case should
         when :present
           return true unless [:absent, :purged, :held].include?(is)
@@ -46,8 +45,8 @@ Puppet::Type.newtype(:vcsrepo) do
           else
             return false
           end
-		when :bare
-		  return is == :bare
+	when :bare
+	  return is == :bare
       end
     end
 
@@ -72,7 +71,12 @@ Puppet::Type.newtype(:vcsrepo) do
           provider.update_references
         end
         if provider.respond_to?(:latest?)
-            reference = provider.latest || provider.revision
+            if resource.value(:revision) and provider.revision == resource.value(:revision)
+                reference = resource.value(:revision)
+            else
+                reference = provider.latest
+            end
+            notice reference
         else
           reference = resource.value(:revision) || provider.revision
         end

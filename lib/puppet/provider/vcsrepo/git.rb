@@ -33,49 +33,49 @@ Puppet::Type.type(:vcsrepo).provide(:git, :parent => Puppet::Provider::Vcsrepo) 
   end
 
   def latest?
-    at_path do
-      return self.revision == self.latest
-    end
+    #notice "in latest?"
+    update_references
+    return self.head_revision == self.latest
+    #notice "end of latest?"
   end
 
   def latest
-    branch = on_branch?
-    if branch == 'master'
-      return get_revision("#{@resource.value(:remote)}/HEAD")
-    elsif branch == '(no branch)'
-      return get_revision('HEAD')
+    #notice "In Latest"
+    if @resource.value(:revision)
+      #notice "We've requested an explicit revision"
+      if tag_revision?(@resource.value(:revision))
+        #notice "tag #{@resource.value(:revision)}"
+        return get_revision(@resource.value(:revision))
+      elsif remote_branch_revision?(@resource.value(:revision))
+        #notice "branch #{@resource.value(:revision)}"
+        return get_revision("remotes/#{@resource.value(:remote)}/#{@resource.value(:revision)}")
+      end
     else
-      return get_revision("#{@resource.value(:remote)}/%s" % branch)
+      #notice "we just want the latest thing"
+      return get_revision('FETCH_HEAD')
     end
   end
 
+  def head_revision
+    #notice "in head_revision"
+    return get_revision('HEAD')
+  end
+
   def revision
-    update_references
-    current = at_path { git_with_identity('rev-parse', 'HEAD').chomp }
-    return current unless @resource.value(:revision)
-
-    if tag_revision?(@resource.value(:revision))
-      canonical = at_path { git_with_identity('show', @resource.value(:revision)).scan(/commit (.*)/).to_s }
-    else
-      canonical = at_path { git_with_identity('rev-parse', @resource.value(:revision)).chomp }
-    end
-
-    if current == canonical
-      @resource.value(:revision)
-    else
-      current
-    end
+    #notice "in revision"
+    return @resource.value(:revision) || self.head_revision
   end
 
   def revision=(desired)
     checkout(desired)
     if local_branch_revision?(desired)
+      #notice "revision=local_branch_revision? #{desired}"
       # reset instead of pull to avoid merge conflicts. assuming remote is
       # authoritative.
       # might be worthwhile to have an allow_local_changes param to decide
       # whether to reset or pull when we're ensuring latest.
       at_path { git_with_identity('reset', '--hard', "#{@resource.value(:remote)}/#{desired}") }
-    elsif tag_revision?(desired)
+    else
       at_path { git_with_identity('reset', '--hard', "#{desired}") }
     end
     if @resource.value(:ensure) != :bare
@@ -98,6 +98,7 @@ Puppet::Type.type(:vcsrepo).provide(:git, :parent => Puppet::Provider::Vcsrepo) 
 
   def update_references
     at_path do
+      git_with_identity('fetch', '--tags', @resource.value(:remote))
       git_with_identity('fetch', @resource.value(:remote))
       update_owner_and_excludes
     end
@@ -256,24 +257,11 @@ Puppet::Type.type(:vcsrepo).provide(:git, :parent => Puppet::Provider::Vcsrepo) 
   end
 
   def get_revision(rev)
+    #notice "in get_revision #{rev}"
     if !working_copy_exists?
       create
     end
-    at_path do
-      git_with_identity('fetch', @resource.value(:remote))
-      git_with_identity('fetch', '--tags', @resource.value(:remote))
-    end
-    current = at_path { git_with_identity('rev-parse', rev).strip }
-    if @resource.value(:revision)
-      if local_branch_revision? or tag_revision?
-        canonical = at_path { git_with_identity('rev-parse', @resource.value(:revision)).strip }
-      elsif remote_branch_revision?
-        canonical = at_path { git_with_identity('rev-parse', "#{@resource.value(:remote)}/" + @resource.value(:revision)).strip }
-      end
-      current = @resource.value(:revision) if current == canonical
-    end
-    update_owner_and_excludes
-    return current
+    return at_path { git_with_identity('rev-parse', rev).strip }
   end
 
   def update_owner_and_excludes
@@ -305,6 +293,7 @@ Puppet::Type.type(:vcsrepo).provide(:git, :parent => Puppet::Provider::Vcsrepo) 
     elsif @resource.value(:user)
       su(@resource.value(:user), '-c', "git #{args.join(' ')}" )
     else
+      #notice "git #{args.join(' ')}"
       git(*args)
     end
   end
