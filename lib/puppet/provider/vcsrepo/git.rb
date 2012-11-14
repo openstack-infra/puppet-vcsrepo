@@ -195,7 +195,7 @@ Puppet::Type.type(:vcsrepo).provide(:git, :parent => Puppet::Provider::Vcsrepo) 
   def checkout(revision = @resource.value(:revision))
     if tag_revision?(revision)
       if !local_branch_revision?("tag/#{revision}")
-        at_path { git_with_identity('checkout', '-b', "tag/#{revision}") }
+        at_path { git_with_identity('checkout', '-b', "tag/#{revision}", "#{revision}") }
       else
         at_path { git_with_identity('checkout', '--force', "tag/#{revision}") }
       end
