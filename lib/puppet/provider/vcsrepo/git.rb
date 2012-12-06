@@ -199,12 +199,10 @@ Puppet::Type.type(:vcsrepo).provide(:git, :parent => Puppet::Provider::Vcsrepo) 
       else
         at_path { git_with_identity('checkout', '--force', "tag/#{revision}") }
       end
-    elsif remote_branch_revision?(revision)
-      if !local_branch_revision?(revision)
+    elsif remote_branch_revision?(revision) && !local_branch_revision?(revision)
         at_path { git_with_identity('checkout', '-b', revision, '--track', "#{@resource.value(:remote)}/#{revision}") }
-      else
-        at_path { git_with_identity('checkout', '--force', revision) }
-      end
+    else
+      at_path { git_with_identity('checkout', '--force', revision) }
     end
   end
 
