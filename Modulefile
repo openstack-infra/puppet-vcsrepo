@@ -1,2 +1,8 @@
 name 'openstackci/vcsrepo'
 version '0.0.8'
+source 'https://github.com/openstack-infra/puppet-vcsrepo.git'
+author 'UNKNOWN'
+license 'UNKNOWN'
+summary 'UNKNOWN'
+description 'UNKNOWN'
+project_page 'https://github.com/openstack-infra/puppet-vcsrepo'
