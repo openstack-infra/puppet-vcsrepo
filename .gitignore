@@ -2,3 +2,5 @@ coverage
 .DS_Store
 .#*
 \#*
+Gemfile.lock
+.bundled_gems
