@@ -1,0 +1,10 @@
+Verified+2: Jenkins
+Code-Review+1: Paul Belanger <pabelanger@redhat.com>
+Code-Review+2: yolanda.robla <info@ysoft.biz>
+Code-Review+2: Spencer Krum <nibz@spencerkrum.com>
+Workflow+1: Spencer Krum <nibz@spencerkrum.com>
+Submitted-by: Jenkins
+Submitted-at: Sat, 12 Sep 2015 21:35:24 +0000
+Reviewed-on: https://review.openstack.org/210756
+Project: openstack-infra/puppet-vcsrepo
+Branch: refs/heads/master
