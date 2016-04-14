@@ -3,6 +3,9 @@ source 'https://rubygems.org'
 group :development, :test do
   gem 'puppetlabs_spec_helper', :require => false
 
+  # Pin google-api-client after it released a ruby 2.0 only version
+  gem 'google-api-client', '0.9.4'
+
   gem 'metadata-json-lint'
   # This is nice and all, but let's not worry about it until we've actually
   # got puppet 4.x sorted
@@ -24,7 +27,10 @@ group :development, :test do
   else
     gem 'puppet', '~> 3.0', :require => false
   end
+end
 
+group :system_tests do
+  gem 'beaker-rspec', :require => false
 end
 
 # vim:ft=ruby
