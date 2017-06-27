@@ -1,0 +1,9 @@
+Code-Review+2: Monty Taylor <mordred@inaugust.com>
+Code-Review+2: Ian Wienand <iwienand@redhat.com>
+Workflow+1: Ian Wienand <iwienand@redhat.com>
+Verified+2: Jenkins
+Submitted-by: Jenkins
+Submitted-at: Tue, 27 Jun 2017 19:54:04 +0000
+Reviewed-on: https://review.openstack.org/477150
+Project: openstack-infra/puppet-vcsrepo
+Branch: refs/heads/master
