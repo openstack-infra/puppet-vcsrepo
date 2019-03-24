@@ -4,7 +4,7 @@
   "author": "OpenStack CI",
   "summary": "Puppet module for Version Control System",
   "license": "Apache 2.0",
-  "source": "git://git.openstack.org/openstack-infra/puppet-vcsrepo.git",
+  "source": "https://git.openstack.org/openstack-infra/puppet-vcsrepo.git",
   "project_page": "http://docs.openstack.org/infra/system-config/",
   "issues_url": "https://storyboard.openstack.org/#!/project/737",
   "dependencies": []
